@@ -1,777 +1,433 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>해운대나눔과행복병원 회복기 입원비 계산기</title>
-<style>
-:root {
-  --blue:#1a6fc4; --blue-dark:#0f4a8a; --blue-light:#e8f1fb; --blue-mid:#2980d9;
-  --teal:#0f6e56; --teal-light:#e1f5ee;
-  --green:#16a34a; --green-light:#dcfce7;
-  --red:#dc2626; --red-light:#fee2e2;
-  --amber:#d97706; --amber-light:#fef3c7;
-  --gray:#64748b; --gray-light:#f1f5f9;
-  --border:#e2e8f0; --border-strong:#cbd5e1;
-  --surface:#f8fafc; --card:#ffffff;
-  --text:#1e293b; --text-sub:#475569; --text-muted:#94a3b8;
-  --radius:12px; --radius-sm:8px;
-  --shadow:0 1px 3px rgba(0,0,0,0.08),0 0 0 1px rgba(0,0,0,0.04);
-  --shadow-md:0 4px 16px rgba(0,0,0,0.10),0 0 0 1px rgba(0,0,0,0.04);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',sans-serif;background:#eef2f7;color:var(--text);min-height:100vh}
- 
-/* NAV */
-nav{background:#163069;padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-.nav-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
-.nav-logo{display:flex;align-items:center;gap:10px;color:white;font-weight:700;font-size:15px;text-decoration:none}
-.nav-logo-icon{width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-link{color:rgba(255,255,255,0.8);font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;background:none;transition:all 0.15s;text-decoration:none;display:inline-flex;align-items:center}
-.nav-link:hover{background:rgba(255,255,255,0.15);color:white}
- 
-/* HERO */
-.hero{background:linear-gradient(160deg,#0f4a8a 0%,#1a6fc4 60%,#2980d9 100%);padding:48px 20px 64px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-40px;right:-60px;width:300px;height:300px;background:rgba(255,255,255,0.05);border-radius:50%}
-.hero::after{content:'';position:absolute;bottom:-60px;left:-40px;width:200px;height:200px;background:rgba(255,255,255,0.04);border-radius:50%}
-.hero-badge{display:inline-block;background:rgba(255,255,255,0.18);color:white;font-size:12px;padding:5px 14px;border-radius:20px;margin-bottom:14px;font-weight:500;border:1px solid rgba(255,255,255,0.25)}
-.hero h1{font-size:30px;font-weight:800;color:white;line-height:1.25;margin-bottom:12px}
-.hero p{font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;max-width:480px;margin:0 auto 24px}
-.hero-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
-.hero-stat{text-align:center;color:white}
-.hero-stat-num{font-size:22px;font-weight:800;display:block}
-.hero-stat-label{font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px}
-.hero-stat-divider{width:1px;background:rgba(255,255,255,0.2);align-self:stretch}
- 
-/* LAYOUT */
-.page{max-width:820px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column}
-#info{order:1}
-#tips{order:2}
-#calculator{order:3}
-#contact{order:4}
- 
-/* SECTION TITLES */
-.section-wrap{margin-top:32px;scroll-margin-top:72px}
-.section-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.section-title::before{content:'';display:inline-block;width:4px;height:20px;background:var(--blue);border-radius:2px}
- 
-/* INFO CARDS ROW */
-.info-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
-.info-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border-top:3px solid transparent}
-.info-card.blue{border-top-color:var(--blue)}
-.info-card.green{border-top-color:var(--green)}
-.info-card.amber{border-top-color:var(--amber)}
-.info-card.red{border-top-color:var(--red)}
-.info-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
-.info-card.blue .info-card-icon{background:var(--blue-light)}
-.info-card.green .info-card-icon{background:var(--green-light)}
-.info-card.amber .info-card-icon{background:var(--amber-light)}
-.info-card.red .info-card-icon{background:var(--red-light)}
-.info-card-title{font-size:12px;color:var(--text-muted);margin-bottom:4px;font-weight:500}
-.info-card-content{font-size:13px;color:var(--text);line-height:1.6}
-.info-card-content strong{font-weight:700}
- 
-/* COPAY TABLE */
-.copay-table-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
-.copay-table-head{background:linear-gradient(135deg,#0f4a8a,#1a6fc4);padding:14px 18px;color:white;font-size:14px;font-weight:700}
-.copay-table-body{padding:0}
-.copay-row{display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border);gap:10px;transition:background 0.1s}
-.copay-row:last-child{border-bottom:none}
-.copay-row:hover{background:var(--gray-light)}
-.copay-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.copay-name{font-size:13px;color:var(--text);font-weight:600;min-width:140px}
-.copay-rate{font-size:13px;color:var(--blue);font-weight:700;min-width:60px}
-.copay-note{font-size:12px;color:var(--text-muted);flex:1}
-.copay-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0}
-.badge-blue{background:var(--blue-light);color:var(--blue)}
-.badge-green{background:var(--green-light);color:var(--green)}
-.badge-amber{background:var(--amber-light);color:var(--amber)}
-.badge-red{background:var(--red-light);color:var(--red)}
- 
-/* WARD ROOM TABLE */
-.ward-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.ward-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.ward-card-head{padding:12px 16px;font-size:13px;font-weight:700;color:white;display:flex;align-items:center;gap:6px}
-.ward-card-head.general{background:linear-gradient(135deg,#1a6fc4,#2980d9)}
-.ward-card-head.integrated{background:linear-gradient(135deg,#0f6e56,#16a34a)}
-.ward-room-list{padding:10px 16px}
-.ward-room-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
-.ward-room-item:last-child{border-bottom:none}
-.ward-room-name{color:var(--text);font-weight:600}
-.ward-room-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
- 
-/* CALCULATOR */
-.calc-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:hidden;margin-bottom:32px}
-.calc-header{background:linear-gradient(135deg,#0f4a8a 0%,#1a6fc4 100%);padding:20px 24px;color:white}
-.calc-header h2{font-size:17px;font-weight:700;margin-bottom:4px}
-.calc-header p{font-size:12px;color:rgba(255,255,255,0.75)}
-.calc-body{padding:20px 24px}
- 
-.step-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
-.step-block:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.step-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--blue);margin-bottom:12px}
-.step-num{background:var(--blue);color:white;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
- 
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.opt{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;background:var(--surface);transition:all 0.15s;text-align:center;user-select:none}
-.opt:hover{border-color:var(--blue-mid);background:var(--blue-light)}
-.opt.active{border:2px solid var(--blue);background:var(--blue-light)}
-.opt-label{font-size:13px;color:var(--text);font-weight:600}
-.opt-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
-.opt-tags{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:5px}
-.tag{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
-.tag-ok{background:var(--green-light);color:var(--green)}
-.tag-no{background:var(--red-light);color:var(--red)}
-.tag-warn{background:var(--amber-light);color:var(--amber)}
-.note-box{font-size:12px;color:var(--text-sub);margin-top:10px;padding:9px 12px;background:var(--blue-light);border-radius:var(--radius-sm);border-left:3px solid var(--blue);line-height:1.65}
- 
-.slider-wrap{display:flex;align-items:center;gap:12px;margin-top:8px}
-.slider-wrap input[type=range]{flex:1;-webkit-appearance:none;height:5px;background:var(--border-strong);border-radius:3px;outline:none}
-.slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;background:var(--blue);border-radius:50%;cursor:pointer;box-shadow:0 2px 6px rgba(26,111,196,0.4)}
-.slider-val{font-size:18px;font-weight:800;color:var(--blue);min-width:52px;text-align:right}
-.day-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.day-badge{font-size:11px;padding:4px 10px;border-radius:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-sub);transition:all 0.12s}
-.day-badge:hover,.day-badge.on{background:var(--blue);color:white;border-color:var(--blue)}
- 
-/* RESULT */
-.result-wrap{border-top:2px solid var(--blue-light);margin-top:20px;padding-top:20px}
-.result-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.result-header-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.result-header-icon svg{width:18px;height:18px;fill:white}
-.result-header-text{font-size:15px;font-weight:700;color:var(--text)}
- 
-.result-rows{background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
-.result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
-.result-row:last-child{border-bottom:none}
-.row-label{font-size:13px;color:var(--text-sub)}
-.row-val{font-size:13px;color:var(--text);font-weight:700}
-
-.monthly-estimate{margin:18px 0}
-.monthly-estimate-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:9px}
-.monthly-estimate-title{font-size:14px;font-weight:700;color:var(--text)}
-.monthly-estimate-note{font-size:11px;color:var(--text-muted);text-align:right}
-.monthly-estimate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.monthly-estimate-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px}
-.monthly-estimate-month{font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px}
-.monthly-estimate-label{font-size:10px;color:var(--text-muted);margin-bottom:2px}
-.monthly-estimate-total{font-size:16px;font-weight:800;color:var(--text);margin-bottom:7px}
-.monthly-estimate-breakdown{border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:6px}
-.monthly-estimate-detail{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:11px}
-.monthly-estimate-detail span{color:var(--text-muted);white-space:nowrap}
-.monthly-estimate-detail strong{color:var(--teal);font-weight:700;text-align:right}
-.monthly-estimate-empty{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;color:var(--text-sub);font-size:12px;line-height:1.7}
-.monthly-estimate-empty strong{display:block;color:var(--text);font-size:14px}
-.monthly-estimate-footnote{font-size:11px;color:var(--text-sub);line-height:1.6;margin-top:8px}
- 
-.total-box{background:linear-gradient(135deg,#0f4a8a,#2980d9);border-radius:var(--radius);padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.total-label{font-size:14px;color:rgba(255,255,255,0.85);font-weight:500}
-.total-val{font-size:28px;font-weight:800;color:white;letter-spacing:-0.5px}
-.total-sub{font-size:11px;color:rgba(255,255,255,0.65);margin-top:3px}
-
-.total-exclusion-note {
-  font-size: 11px; 
-  color: var(--red); 
-  font-weight: 600; 
-  margin-bottom: 14px; 
-  padding-left: 4px;
-}
- 
-/* COMPARISON */
-.compare-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.compare-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;transition:all 0.15s}
-.compare-card.active{border:2px solid var(--blue);background:var(--blue-light)}
-.compare-room{font-size:11px;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:4px}
-.compare-room-badge{font-size:9px;padding:1px 5px;background:var(--blue);color:white;border-radius:3px}
-.compare-amount{font-size:15px;font-weight:800;color:var(--text)}
-.compare-ref{font-size:11px;color:var(--blue);margin-top:2px}
- 
-/* NOTICE */
-.notice-box{margin-top:14px;padding:12px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius-sm);font-size:12px;color:#78350f;line-height:1.8}
-.notice-box strong{font-weight:700}
-.notice-item-red { color: var(--red); }
-.notice-item-amber { color: #b45309; }
-.notice-item-blue { color: var(--blue-dark); }
- 
-/* TIPS */
-.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.tip-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.tip-icon{font-size:24px;margin-bottom:8px}
-.tip-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px}
-.tip-body{font-size:12px;color:var(--text-sub);line-height:1.7}
- 
-/* CONTACT */
-.contact-card{background:linear-gradient(135deg,#0f4a8a,#1a6fc4);border-radius:var(--radius);padding:20px 24px;color:white;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.contact-left h3{font-size:16px;font-weight:700;margin-bottom:4px}
-.contact-left p{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5}
-.contact-right{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-.contact-btn{background:white;color:var(--blue);font-size:13px;font-weight:700;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.contact-btn:hover{background:#f0f4ff}
- 
-/* FOOTER */
-footer{background:#14316b;color:rgba(255,255,255,0.72);text-align:center;padding:24px 16px;font-size:12px;line-height:1.8}
-footer strong{color:rgba(255,255,255,0.9)}
- 
-/* SCROLL TOP */
-.scroll-top{position:fixed;bottom:24px;right:24px;width:44px;height:44px;background:var(--blue);color:white;border:none;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(26,111,196,0.4);opacity:0;transition:opacity 0.2s,transform 0.2s;transform:translateY(10px);z-index:99}
-.scroll-top.show{opacity:1;transform:translateY(0)}
- 
-@media(max-width:600px){
-  .hero h1{font-size:22px}
-  .grid3{grid-template-columns:1fr 1fr}
-  .grid4{grid-template-columns:1fr 1fr}
-  .ward-grid{grid-template-columns:1fr}
-  .tips-grid{grid-template-columns:1fr}
-  .contact-right{align-items:flex-start}
-  .nav-links{display:none}
-  .monthly-estimate-grid{grid-template-columns:1fr 1fr}
-  .monthly-estimate-head{align-items:flex-start;flex-direction:column;gap:3px}
-  .monthly-estimate-note{text-align:left}
-  .monthly-estimate-detail{flex-direction:column;gap:2px}
-  .monthly-estimate-detail strong{text-align:left}
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>해운대나눔과행복병원 회복기 입원비 계산기</title>
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- External Premium Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
- 
-<nav>
-  <div class="nav-inner">
-    <a class="nav-logo" href="https://www.snh.or.kr/main/main.php" target="_blank" rel="noopener noreferrer">
-      <div class="nav-logo-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm1 14h-2v-4H7v-2h4V6h2v4h4v2h-4v4z"/></svg>
-      </div>
-      해운대나눔과행복병원
-    </a>
-    <div class="nav-links">
-      <a class="nav-link" href="https://www.snh.or.kr/sub01/sub03_01.php" target="_blank" rel="noopener noreferrer">진료시간표</a>
-      <button class="nav-link" type="button" onclick="scrollToSection('info')">입원 안내</button>
-      <button class="nav-link" type="button" onclick="scrollToSection('tips')">알아두기</button>
-      <button class="nav-link" type="button" onclick="scrollToSection('calculator')">계산기</button>
-      <button class="nav-link" type="button" onclick="scrollToSection('contact')">문의</button>
-    </div>
-  </div>
-</nav>
- 
-<div class="hero">
-  <div class="hero-badge">2026년 최신 기준</div>
-  <h1>회복기 입원비 계산기</h1>
-  <p>병동·병실·질환 구분별로 예상 본인부담금을<br>간편하게 계산해보세요</p>
-  <div class="hero-stats">
-    <div class="hero-stat"><span class="hero-stat-num">8가지</span><div class="hero-stat-label">질환 및 환자구분</div></div>
-    <div class="hero-stat-divider"></div>
-    <div class="hero-stat"><span class="hero-stat-num">4종</span><div class="hero-stat-label">병실 유형</div></div>
-    <div class="hero-stat-divider"></div>
-    <div class="hero-stat"><span class="hero-stat-num">2개</span><div class="hero-stat-label">병동 유형</div></div>
-  </div>
-</div>
- 
-<div class="page">
- 
-<div class="section-wrap" id="info">
-  <div class="section-title">입원 안내</div>
- 
-  <div class="info-row">
-    <div class="info-card blue">
-      <div class="info-card-icon">🏥</div>
-      <div class="info-card-title">병동 구성</div>
-      <div class="info-card-content">
-        <strong>일반병동</strong>: 6병동, 7병동<br>
-        <strong>통합병동</strong>: 5병동(8인실), 8병동(2·3·4인실)
+
+  <!-- Navigation Menu -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-logo" href="https://www.snh.or.kr/main/main.php" target="_blank" rel="noopener noreferrer">
+        <div class="nav-logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </div>
+        <strong>해운대나눔과행복병원</strong>
+      </a>
+      <div class="nav-links">
+        <button class="nav-link" onclick="window.scrollTo({top: document.getElementById('calc-section').offsetTop - 90, behavior: 'smooth'})">입원비 계산기</button>
+        <button class="nav-link" onclick="window.scrollTo({top: document.getElementById('tips').offsetTop - 90, behavior: 'smooth'})">알아두기 (고시 정보)</button>
+        <a class="nav-link active-btn" href="https://www.snh.or.kr/sub01/sub03_01.php" target="_blank" rel="noopener noreferrer">진료시간표</a>
       </div>
     </div>
-    <div class="info-card green">
-      <div class="info-card-icon">💳</div>
-      <div class="info-card-title">본인부담상한제</div>
-      <div class="info-card-content">
-        <strong>4인실·8인실</strong> 적용 가능<br>
-        <strong>2인실·3인실</strong>은 적용 불가
-      </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <div class="hero">
+    <div class="hero-badge">
+      <span style="color:#60a5fa">●</span> 2026년 보건복지부 · 심평원 최신 수가 반영
     </div>
-    <div class="info-card amber">
-      <div class="info-card-icon">⚠️</div>
-      <div class="info-card-title">병실료 추가부담</div>
-      <div class="info-card-content">
-        <strong>2인실</strong>: 본인부담 40% 고정<br>
-        <strong>3인실</strong>: 본인부담 30% 고정<br>
-        질환 구분과 무관하게 적용
+    <h1>회복기 재활 <span>입원비 계산기</span></h1>
+    <p>보건복지부 재활의료기관 지정 기준 및 근로복지공단 산재보험 기준을 연동하여 정확하고 투명한 모의 병원비 명세서를 실시간으로 계산해 드립니다.</p>
+    
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-num">7개 질환</span>
+        <div class="hero-stat-label">보건복지부 지정 회복기군</div>
       </div>
-    </div>
-    <div class="info-card red">
-      <div class="info-card-icon">📋</div>
-      <div class="info-card-title">단회복기 기간</div>
-      <div class="info-card-content">
-        입원 <strong>1~15일</strong> 기준 본인부담 적용<br>
-        16~30일, 31일~ 구간별 요금 차등
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">100% 반영</span>
+        <div class="hero-stat-label">근로복지공단 산재보험 급여</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">2026 한도</span>
+        <div class="hero-stat-label">본인부담상한액 실시간 판독</div>
       </div>
     </div>
   </div>
- 
-  <div class="copay-table-wrap">
-    <div class="copay-table-head">질환·환자 구분별 본인부담률</div>
-    <div class="copay-table-body">
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#1a6fc4"></div>
-        <div class="copay-name">고관절 / 척수·뇌질환</div>
-        <div class="copay-rate">20%</div>
-        <div class="copay-note">일반병 기준 본인부담</div>
-        <div class="copay-badge badge-blue">일반병</div>
-      </div>
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#7c3aed"></div>
-        <div class="copay-name">희귀난치성</div>
-        <div class="copay-rate">10%</div>
-        <div class="copay-note">희귀난치성 질환 인정 기준</div>
-        <div class="copay-badge badge-blue">희귀</div>
-      </div>
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#0f6e56"></div>
-        <div class="copay-name">중증질환자</div>
-        <div class="copay-rate">5%</div>
-        <div class="copay-note">암 등 중증 질환 산정특례</div>
-        <div class="copay-badge badge-green">중증</div>
-      </div>
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#d97706"></div>
-        <div class="copay-name">의료급여 2종</div>
-        <div class="copay-rate">10%</div>
-        <div class="copay-note">의료급여 2종 수급자</div>
-        <div class="copay-badge badge-amber">급여</div>
-      </div>
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#b45309"></div>
-        <div class="copay-name">의료급여 2종 장애인</div>
-        <div class="copay-rate">식대+전액+비급여</div>
-        <div class="copay-note">식대·전액본인부담·비급여 별도 산정</div>
-        <div class="copay-badge badge-amber">급여</div>
-      </div>
-      <div class="copay-row">
-        <div class="copay-dot" style="background:#dc2626"></div>
-        <div class="copay-name">의료급여 1종</div>
-        <div class="copay-rate">식대+전액+비급여</div>
-        <div class="copay-note">식대·전액본인부담·비급여 별도 산정</div>
-        <div class="copay-badge badge-red">급여1종</div>
-      </div>
-      <div class="copay-row" style="background:#fff8f0">
-        <div class="copay-dot" style="background:#f97316"></div>
-        <div class="copay-name">차상위 2종</div>
-        <div class="copay-rate">14%</div>
-        <div class="copay-note">차상위계층은 가구의 소득인정액이 기준 중위소득의 50% 이하인 경우</div>
-        <div class="copay-badge badge-amber">차상위</div>
-      </div>
-      <div class="copay-row" style="background:#f0fdf4">
-        <div class="copay-dot" style="background:#16a34a"></div>
-        <div class="copay-name">차상위 1종</div>
-        <div class="copay-rate">식대+전액+비급여</div>
-        <div class="copay-note">식대·전액본인부담·비급여 별도 산정</div>
-        <div class="copay-badge badge-green">차상위1종</div>
-      </div>
-    </div>
-  </div>
- 
-  <div class="ward-grid">
-    <div class="ward-card">
-      <div class="ward-card-head general">🏨 일반병동 (6·7병동)</div>
-      <div class="ward-room-list">
-        <div class="ward-room-item">
-          <span class="ward-room-name">2인실</span>
-          <span class="ward-room-tag" style="background:#fee2e2;color:#991b1b">본인부담 40% · 상한제 ✕</span>
-        </div>
-        <div class="ward-room-item">
-          <span class="ward-room-name">3인실</span>
-          <span class="ward-room-tag" style="background:#fef3c7;color:#92400e">본인부담 30% · 상한제 ✕</span>
-        </div>
-        <div class="ward-room-item">
-          <span class="ward-room-name">4인실</span>
-          <span class="ward-room-tag" style="background:#dcfce7;color:#065f46">질환별 적용 · 상한제 ○</span>
-        </div>
-      </div>
-    </div>
-    <div class="ward-card">
-      <div class="ward-card-head integrated">🏨 통합병동 (5·8병동)</div>
-      <div class="ward-room-list">
-        <div class="ward-room-item">
-          <span class="ward-room-name">2인실</span>
-          <span class="ward-room-tag" style="background:#fee2e2;color:#991b1b">본인부담 40% · 상한제 ✕</span>
-        </div>
-        <div class="ward-room-item">
-          <span class="ward-room-name">3인실</span>
-          <span class="ward-room-tag" style="background:#fef3c7;color:#92400e">본인부담 30% · 상한제 ✕</span>
-        </div>
-        <div class="ward-room-item">
-          <span class="ward-room-name">4인실</span>
-          <span class="ward-room-tag" style="background:#dcfce7;color:#065f46">질환별 적용 · 상한제 ○</span>
-        </div>
-        <div class="ward-room-item">
-          <span class="ward-room-name">8인실</span>
-          <span class="ward-room-tag" style="background:#dcfce7;color:#065f46">질환별 적용 · 상한제 ○</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
- 
-<div class="section-wrap" id="calculator">
-  <div class="section-title">입원료 계산기</div>
-  <div class="calc-wrap">
-    <div class="calc-header">
-      <h2>입원료 계산기</h2>
-      <p>아래 항목을 순서대로 선택하면 예상 본인부담금을 바로 알 수 있어요</p>
-    </div>
-    <div class="calc-body">
- 
-      <div class="step-block">
-        <div class="step-label"><span class="step-num">1</span>병동 유형</div>
-        <div class="grid2" id="ward-grid">
-          <div class="opt active" onclick="selectWard('general',this)">
-            <div class="opt-label">🏥 일반병동</div>
-            <div class="opt-desc">6병동 · 7병동</div>
+
+  <!-- Content Body -->
+  <div class="container" id="calc-section">
+    <div class="layout-wrapper">
+      
+      <!-- Left Column: Input Panel -->
+      <div class="inputs-panel">
+        
+        <!-- Step 1: 병동 및 병실 선택 -->
+        <div class="card">
+          <div class="card-title">
+            <div class="card-title-icon">🏨</div>
+            입원 병동 & 호실 설정
           </div>
-          <div class="opt" onclick="selectWard('integrated',this)">
-            <div class="opt-label">🏨 통합병동</div>
-            <div class="opt-desc">5병동 · 8병동</div>
+          
+          <div class="form-group">
+            <span class="label-meta">1. 병동 선택</span>
+            <div class="grid4" id="ward-selector">
+              <div class="btn-opt active" data-ward="5병동">
+                <span class="btn-opt-title">5병동</span>
+                <span class="btn-opt-desc">통합(8인실)</span>
+              </div>
+              <div class="btn-opt" data-ward="6병동">
+                <span class="btn-opt-title">6병동</span>
+                <span class="btn-opt-desc">일반병동</span>
+              </div>
+              <div class="btn-opt" data-ward="7병동">
+                <span class="btn-opt-title">7병동</span>
+                <span class="btn-opt-desc">일반병동</span>
+              </div>
+              <div class="btn-opt" data-ward="8병동">
+                <span class="btn-opt-title">8병동</span>
+                <span class="btn-opt-desc">통합(2~4인)</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
- 
-      <div class="step-block">
-        <div class="step-label"><span class="step-num">2</span>병실 유형</div>
-        <div id="room-grid"></div>
-        <div id="room-note" class="note-box"></div>
-      </div>
- 
-      <div class="step-block">
-        <div class="step-label"><span class="step-num">3</span>질환 · 환자 구분</div>
-        <div class="grid2" id="patient-grid">
-          <div class="opt active" onclick="selectPatient('고관절',this)"><div class="opt-label">고관절</div><div class="opt-desc">일반병 20%</div></div>
-          <div class="opt" onclick="selectPatient('척수/뇌질환',this)"><div class="opt-label">척수 / 뇌질환</div><div class="opt-desc">일반병 20%</div></div>
-          <div class="opt" onclick="selectPatient('희귀난치성',this)"><div class="opt-label">희귀난치성</div><div class="opt-desc">본인부담 10%</div></div>
-          <div class="opt" onclick="selectPatient('중증질환자',this)"><div class="opt-label">중증질환자</div><div class="opt-desc">본인부담 5%</div></div>
-          <div class="opt" onclick="selectPatient('의료급여2종',this)"><div class="opt-label">의료급여 2종</div><div class="opt-desc">본인부담 10%</div></div>
-          <div class="opt" onclick="selectPatient('의료급여2종장애인',this)"><div class="opt-label">의료급여 2종 장애인</div><div class="opt-desc">식대+전액+비급여</div></div>
-          <div class="opt" onclick="selectPatient('차상위2종',this)"><div class="opt-label">차상위 2종</div><div class="opt-desc">본인부담 14%</div></div>
-          <div class="opt" onclick="selectPatient('의료급여1종',this)"><div class="opt-label">의료급여 1종</div><div class="opt-desc">식대+전액+비급여</div></div>
-          <div class="opt" onclick="selectPatient('차상위1종',this)"><div class="opt-label">차상위 1종</div><div class="opt-desc">식대+전액+비급여</div></div>
-        </div>
-        <div id="patient-note" class="note-box"></div>
-      </div>
- 
-      <div class="step-block">
-        <div class="step-label"><span class="step-num">4</span>입원 일수</div>
-        <div class="slider-wrap">
-          <input type="range" min="1" max="30" value="30" id="days-slider" oninput="updateDays(this.value)" step="1">
-          <span class="slider-val" id="days-out">30일</span>
-        </div>
-        <div class="day-badges">
-          <div class="day-badge" onclick="setDays(7)">7일</div>
-          <div class="day-badge" onclick="setDays(14)">14일</div>
-          <div class="day-badge on" onclick="setDays(30)">30일</div>
-        </div>
-        <div id="period-note" class="note-box"></div>
-      </div>
- 
-      <div class="result-wrap">
-        <div class="result-header">
-          <div class="result-header-icon">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 17h8v1H8v-1zm0-3h8v1H8v-1zm0-3h5v1H8v-1z"/></svg>
+          
+          <div class="form-group">
+            <span class="label-meta">2. 병실 및 호실 선택</span>
+            <div id="room-selector-container">
+              <!-- Dynamically rendered based on selected ward -->
+            </div>
+            <div id="room-tip-box" class="notice-box">
+              <!-- Dynamically rendered -->
+            </div>
           </div>
-          <div class="result-header-text">입원료 내역</div>
-        </div>
- 
-        <div class="result-rows">
-          <div class="result-row"><span class="row-label">병실</span><span class="row-val" id="r-room">—</span></div>
-          <div class="result-row"><span class="row-label">질환 / 환자 구분</span><span class="row-val" id="r-patient">—</span></div>
-          <div class="result-row"><span class="row-label">입원 기간</span><span class="row-val" id="r-days">—</span></div>
-          <div class="result-row"><span class="row-label">일일 기준 입원료 (현재 구간)</span><span class="row-val" id="r-daily">—</span></div>
-          <div class="result-row"><span class="row-label">일일 예상 본인부담금</span><span class="row-val" id="r-daily-copay">—</span></div>
-          <div class="result-row"><span class="row-label">전체 입원료 합계</span><span class="row-val" id="r-total">—</span></div>
-          <div class="result-row"><span class="row-label">적용 본인부담률</span><span class="row-val" id="r-rate">—</span></div>
-          <div class="result-row"><span class="row-label">수가 적용 기준</span><span class="row-val" id="r-basis">—</span></div>
         </div>
 
-        <div class="total-box">
-          <div>
-            <div class="total-label">예상 본인부담금</div>
-            <div class="total-sub" id="total-sub">전체 입원료의 계산값</div>
+        <!-- Step 2: 골든타임 판독기 (발병일 및 입원일) -->
+        <div class="card">
+          <div class="card-title">
+            <div class="card-title-icon">⏱️</div>
+            심평원 재활 골든타임 & 대상 판독
           </div>
-          <div class="total-val" id="r-copay">계산 중...</div>
-        </div>
-        <div class="total-exclusion-note" id="total-exclusion-note">※ 식대, 약제비, 치료재료대 및 비급여 항목은 모두 제외된 금액입니다.</div>
-
-        <div id="compare-wrap" style="display:none">
-          <div class="compare-title">병실별 비교 (같은 질환 · 같은 기간)</div>
-          <div class="compare-grid" id="compare-grid"></div>
-        </div>
-
-        <div class="monthly-estimate">
-          <div class="monthly-estimate-head">
-            <div class="monthly-estimate-title">1~3개월 예상 총 병원비</div>
-            <div class="monthly-estimate-note">병원 입원비 안내표 기준</div>
+          
+          <div class="form-group">
+            <span class="label-meta">1. 회복기 재활 대상 질환군 선택</span>
+            <select class="input-field" id="disease-select">
+              <option value="cns_stroke">뇌졸중 (뇌경색, 뇌출혈) [중추신경계]</option>
+              <option value="cns_brain_injury">외상성 / 비외상성 뇌손상 [중추신경계]</option>
+              <option value="cns_spinal_injury">척수손상 (신경계 마비 등) [중추신경계]</option>
+              <option value="msk_hip_single">고관절·골반·대퇴 골절 및 치환술 (단일 부위) [근골격계]</option>
+              <option value="msk_hip_multi">고관절·골반·대퇴 골절 및 치환술 (다발 부위) [근골격계]</option>
+              <option value="msk_knee_double">양측 슬관절 치환술 (복합 수술) [근골격계]</option>
+              <option value="amputation">하지 부위 절단 (수술 후 재활)</option>
+              <option value="disuse_syndrome">비사용 증후군 (급성 질환/수술 후 쇠약)</option>
+            </select>
           </div>
-          <div class="monthly-estimate-grid" id="monthly-estimate-grid" aria-live="polite"></div>
-          <div class="monthly-estimate-footnote">※ 고관절·척수/뇌질환은 재활치료료를 월 100~117만원으로 반영했습니다. 병실료는 위 계산기에서 현재 설정한 입원 일수의 예상 본인부담금을 기준으로 1배·2배·3배 적용한 추정값입니다.</div>
+          
+          <div class="grid2">
+            <div class="form-group">
+              <span class="label-meta">2. 발병일 또는 수술일</span>
+              <input type="date" class="input-field" id="onset-date-input">
+            </div>
+            <div class="form-group">
+              <span class="label-meta">3. 입원(예정)일</span>
+              <input type="date" class="input-field" id="admission-date-input">
+            </div>
+          </div>
+
+          <div id="goldentime-alert" class="notice-box">
+            <!-- Dynamic Golden Time Checker Alert -->
+          </div>
         </div>
- 
-        <div class="notice-box">
-          <strong>※ 유의사항</strong><br>
-          <span class="notice-item-red">· 2인실은 본인부담 <strong>40%</strong>, 3인실은 <strong>30%</strong> 고정 적용됩니다. (산정특례 질환 구분 및 감면 혜택과 무관하게 적용)</span><br>
-          <span class="notice-item-amber">· 4인실·8인실은 본인부담상한제 적용이 가능하나, 상급병실인 2인실·3인실은 상한제 환급 대상에서 제외됩니다.</span><br>
-          <span class="notice-item-red">· 위 모의 계산 금액은 건강보험 <strong>급여 항목 기준 입원료</strong>이며, 식대 및 비급여 비용(기타 선택진료 및 주사 등)은 별도로 청구됩니다.</span><br>
-          <span class="notice-item-blue">· 일반병동은 2026.7.1 간호 1등급 수가와 관리료 합계, 통합병동 2인실은 2026.1.1 수가 합계를 반영했습니다.</span><br>
-          <span class="notice-item-blue">· 구간 요금 기준: 입원 초기 단회복기 기간(1~15일) 수가가 가장 높으며, 16일/31일 도래 시 체감 요금이 적용됩니다.</span><br>
-          · 최종 확정 및 실제 청구 금액은 환자 상태별 세부 처방에 따라 상이하므로 담당 <strong>원무팀</strong>에 문의해 주세요.
+
+        <!-- Step 3: 환자 보장형태 & 치료 설정 -->
+        <div class="card">
+          <div class="card-title">
+            <div class="card-title-icon">💳</div>
+            보험 보장 형태 & 재활 치료 강도
+          </div>
+          
+          <div class="form-group">
+            <span class="label-meta">1. 환자 구분 (본인부담률)</span>
+            <select class="input-field" id="insurance-select">
+              <option value="nhi_general">고관절 / 척수·뇌질환 (본인부담 20% / 일반병)</option>
+              <option value="nhi_rare">희귀난치성 질환 (본인부담 10% / 희귀)</option>
+              <option value="nhi_severe">중증질환자 산정특례 - 암 등 (본인부담 5% / 중증)</option>
+              <option value="medical_type2">의료급여 2종 (본인부담 10% / 급여)</option>
+              <option value="medical_type2_disabled">의료급여 2종 장애인 (식대+전액+비급여 별도 산정 / 급여)</option>
+              <option value="medical_type1">의료급여 1종 (식대+전액+비급여 별도 산정 / 급여1종)</option>
+              <option value="near_poverty_type2">차상위 2종 (본인부담 14% / 차상위)</option>
+              <option value="near_poverty_type1">차상위 1종 (식대+전액+비급여 별도 산정 / 차상위1종)</option>
+              <option value="workers_comp">근로복지공단 산재보험 (급여 0% / 상급병실 차액 환자부담)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <span class="label-meta">2. 전문 재활치료 종류 설정</span>
+            <div class="grid3" id="rehab-selector">
+              <div class="btn-opt active" data-rehab="intensive">
+                <span class="btn-opt-title">집중 재활치료</span>
+                <span class="btn-opt-desc">하루 2~3시간 집중재활</span>
+                <span class="btn-opt-badge badge-teal">월 약 550만원 상당</span>
+              </div>
+              <div class="btn-opt" data-rehab="standard">
+                <span class="btn-opt-title">일반 재활치료</span>
+                <span class="btn-opt-desc">단독 물리/작업치료</span>
+                <span class="btn-opt-badge badge-teal">월 약 280만원 상당</span>
+              </div>
+              <div class="btn-opt" data-rehab="none">
+                <span class="btn-opt-title">치료 제외</span>
+                <span class="btn-opt-desc">재활치료 미진행</span>
+                <span class="btn-opt-badge badge-amber">입원료만 계산</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: 입원일수 및 식사 횟수 설정 -->
+        <div class="card">
+          <div class="card-title">
+            <div class="card-title-icon">📅</div>
+            입원 일수 및 식사 횟수 설정
+          </div>
+
+          <div class="slider-container">
+            <div class="slider-header">
+              <span class="slider-days-title">예상 입원 일수</span>
+              <div class="slider-days-value" id="days-display">30<span>일</span></div>
+            </div>
+            <div class="slider-bar-wrap">
+              <input type="range" class="slider-bar" min="1" max="30" value="30" id="days-range">
+            </div>
+            <div class="slider-presets">
+              <button class="btn-preset" data-days="7">1주일 (7일)</button>
+              <button class="btn-preset" data-days="15">초기구간 (15일)</button>
+              <button class="btn-preset active" data-days="30">1달 (30일)</button>
+            </div>
+          </div>
+
+          <div id="days-limit-alert" class="notice-box" style="display:none">
+            <!-- Dynamic Stay Limit Alert -->
+          </div>
+
+          <div class="grid2" style="margin-top: 20px;">
+            <div class="form-group">
+              <span class="label-meta">하루 식사 횟수</span>
+              <select class="input-field" id="meals-per-day">
+                <option value="3">매끼 식사 (하루 3회)</option>
+                <option value="2">하루 2회 식사</option>
+                <option value="1">하루 1회 식사</option>
+                <option value="0">금식 또는 경관영양 (0회)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <span class="label-meta">끼니당 식사료 기준</span>
+              <input type="text" class="input-field" id="meal-cost-info" value="8,100원 (본인부담금 50%: 4,050원)" disabled style="background-color: var(--slate-100);">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: 소득 분위 및 본인부담상한제 시뮬레이션 -->
+        <div class="card" id="ceiling-card">
+          <div class="card-title">
+            <div class="card-title-icon">📊</div>
+            2026년 본인부담상한제 시뮬레이터 (건강보험 전용)
+          </div>
+          <p style="font-size:12px; color:var(--slate-600); margin-bottom: 16px; line-height: 1.5">
+            본인부담상한제는 연간 급여 본인부담금(4인실·8인실 입원료, 재활치료료 등)이 소득 기준별 상한액을 넘을 경우, 초과액을 국민건강보험공단에서 돌려주는 국가 제도입니다. (상급병실료 차액, 식대, 비급여는 제외)
+          </p>
+          
+          <div class="form-group">
+            <span class="label-meta">건강보험료 분위 또는 소득 기준 선택</span>
+            <select class="input-field" id="ceiling-select">
+              <option value="decile_1">1분위 (하위 10% / 월 건강보험료 5.2만원 이하) - 상한액 90만원</option>
+              <option value="decile_2_3">2~3분위 (월 건강보험료 7.8만원 이하) - 상한액 110만원</option>
+              <option value="decile_4_5">4~5분위 (월 건강보험료 11.8만원 이하) - 상한액 170만원</option>
+              <option value="decile_6_7">6~7분위 (월 건강보험료 17.6만원 이하) - 상한액 310만원</option>
+              <option value="decile_8">8분위 (월 건강보험료 25.8만원 이하) - 상한액 430만원</option>
+              <option value="decile_9">9분위 (월 건강보험료 44.7만원 이하) - 상한액 530만원</option>
+              <option value="decile_10">10분위 (상위 10% / 월 건강보험료 44.7만원 초과) - 상한액 880만원</option>
+            </select>
+          </div>
+
+          <div id="ceiling-alert" class="notice-box">
+            <!-- Dynamic ceiling calculation -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Receipt Sidebar (Dynamic Board) -->
+      <div class="receipt-sidebar">
+        
+        <!-- Receipt Document Card -->
+        <div class="receipt">
+          <div class="receipt-header">
+            <span class="receipt-header-title">예상 병원비 모의 명세서</span>
+            <span class="receipt-header-logo">NANUM & HAENGBOK</span>
+          </div>
+          
+          <div class="receipt-body">
+            <!-- Patient Setup details Summary -->
+            <div class="receipt-sec-title">입원 기본 명세</div>
+            <div class="receipt-row">
+              <span class="receipt-label">병동 및 병실</span>
+              <span class="receipt-val" id="rec-ward-room">일반병동 4인실</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">환자 구분</span>
+              <span class="receipt-val" id="rec-insurance">일반병 (20%)</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">계산 입원일수</span>
+              <span class="receipt-val" id="rec-days">30일</span>
+            </div>
+
+            <!-- Financial Calculations -->
+            <div class="receipt-divider"></div>
+            <div class="receipt-sec-title">항목별 총액 (비급여 포함)</div>
+            
+            <div class="receipt-row">
+              <span class="receipt-label">1. 기본 입원료 총액</span>
+              <span class="receipt-val" id="rec-base-room-total">0원</span>
+            </div>
+            <div class="receipt-row" id="rec-surcharge-row">
+              <span class="receipt-label">2. 상급병실 차액 (본인부담 100%)</span>
+              <span class="receipt-val val-accent" id="rec-surcharge-total">0원</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">3. 전문 재활치료료 총액</span>
+              <span class="receipt-val" id="rec-rehab-total">0원</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">4. 식사료 총액</span>
+              <span class="receipt-val" id="rec-meals-total">0원</span>
+            </div>
+
+            <div class="receipt-divider"></div>
+            <div class="receipt-sec-title">급여 / 비급여 구분 본인부담금</div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">급여 항목 본인부담금 합계</span>
+              <span class="receipt-val" id="rec-copay-benefit">0원</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-label">비급여 및 상급병실 차액 합계</span>
+              <span class="receipt-val" id="rec-copay-non-benefit">0원</span>
+            </div>
+
+            <!-- Final Grand Total Box -->
+            <div class="receipt-total-box">
+              <div class="receipt-grand-row">
+                <div class="receipt-grand-label">환자 예상 본인부담금</div>
+                <div class="receipt-grand-val" id="rec-grand-total">0원</div>
+              </div>
+              <div id="receipt-footnote" style="font-size:10px; color:var(--slate-600); margin-top:8px; text-align:right; font-weight: 500;">
+                ※ 치료재료대, 약제비 및 비급여 검사/처치 비용은 제외된 모의 계산입니다.
+              </div>
+            </div>
+
+            <!-- Print Actions -->
+            <div style="margin-top:20px;">
+              <button class="btn-action-primary" onclick="window.print()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                명세서 출력 및 PDF 저장
+              </button>
+              <button class="btn-action-secondary" onclick="alert('병원 원무팀(대표번호: 051-725-0503)으로 전화 상담이 가능합니다.')">
+                📞 6층 원무팀 즉시 상담 문의
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Room Surcharges Comparison Quick View -->
+        <div class="compare-container" id="compare-section">
+          <div class="receipt-sec-title" style="border:none; margin-bottom: 6px;">동일 질환 · 기간별 병실 차액 비교</div>
+          <div class="compare-grid" id="compare-grid">
+            <!-- Dynamically populated room options -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 1~3 Months Cost Dynamic Simulation -->
+    <div class="projection" id="projection-section">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-icon">📅</div>
+          선택한 설정 기준 중장기(1~3달) 입원비 시뮬레이션
+        </div>
+        <p style="font-size:12px; color:var(--slate-600); margin-bottom:16px;">
+          선택하신 병동, 병실 인원수, 재활 치료 옵션을 30일, 60일, 90일 동안 일정하게 유지할 경우의 종합 의료비 추정값입니다. (입원료 수가 체감제 자동 반영)
+        </p>
+        <div class="projection-grid" id="projection-grid">
+          <!-- Dynamically populated projection cards -->
         </div>
       </div>
- 
     </div>
-  </div>
-</div>
- 
-<div class="section-wrap" id="tips">
-  <div class="section-title">입원 전 알아두면 좋은 것들</div>
-  <div class="tips-grid">
-    <div class="tip-card">
-      <div class="tip-icon">💡</div>
-      <div class="tip-title">본인부담상한제란? (843만원, 2026년 기준)</div>
-      <div class="tip-body">연간 본인부담금이 일정 금액을 초과하면 건강보험공단에서 초과분을 환급해주는 제도입니다. 4인실·8인실에 해당하며, 소득 수준에 따라 상한액이 달라집니다.</div>
-    </div>
-    <div class="tip-card">
-      <div class="tip-icon">📄</div>
-      <div class="tip-title">산정특례 적용 방법</div>
-      <div class="tip-body">중증질환(암 등)은 산정특례 등록 시 본인부담률이 5%로 낮아집니다. 등록 전 진료비와 차이가 크므로 담당 의사에게 산정특례 신청 여부를 꼭 확인하세요.</div>
-    </div>
-    <div class="tip-card">
-      <div class="tip-icon">🏷️</div>
-      <div class="tip-title">병실 선택 시 고려사항</div>
-      <div class="tip-body">2인실·3인실은 편의성이 높지만 본인부담이 고정(40%/30%)이며 상한제 미적용입니다. 장기 입원이라면 4인실·8인실이 비용 면에서 유리할 수 있어요.</div>
-    </div>
-    <div class="tip-card">
-      <div class="tip-icon">📱</div>
-      <div class="tip-title">실손보험 청구</div>
-      <div class="tip-body">실손의료보험 가입자는 본인부담금 일부를 추가로 청구할 수 있습니다. 입원 중 영수증, 진단서, 입퇴원 확인서를 챙겨두세요. 비급여 항목도 청구 대상이 될 수 있습니다.</div>
-    </div>
-    <div class="tip-card">
-      <div class="tip-icon">🗂️</div>
-      <div class="tip-title">의료급여 및 차상위 안내</div>
-      <div class="tip-body">의료급여 1·2종 및 차상위 계층 수급자는 일반 건강보험과 다른 본인부담 구조를 가집니다. 식대, 전액본인부담, 비급여가 별도로 산정되니 입원 전 원무팀에 꼭 사전 상담을 받으세요.</div>
-    </div>
-    <div class="tip-card">
-      <div class="tip-icon">🔄</div>
-      <div class="tip-title">구간별 요금 차이</div>
-      <div class="tip-body">입원 1~15일, 16~30일, 31일 이상 구간별로 일일 입원료가 달라집니다. 장기 입원일수록 일일 요금은 낮아지지만 총액은 늘어나므로 계산기로 미리 확인하세요.</div>
-    </div>
-  </div>
-</div>
- 
-<div class="section-wrap" id="contact">
-  <div class="section-title">문의 안내</div>
-  <div class="contact-card">
-    <div class="contact-left">
-      <h3>입원비 상세 문의는 원무팀으로</h3>
-      <p>비급여 항목, 의료급여 1종 산정, 실제 청구 금액 등<br>계산기에서 확인하기 어려운 내용은 원무팀에서 안내해드립니다</p>
-    </div>
-    <div class="contact-right">
-      <button class="contact-btn" onclick="alert('병원 원무팀(051-725-0503~4)으로 문의해 주세요')">📞 원무팀 문의</button>
-      <button class="contact-btn" onclick="alert('원무팀 방문 안내: 6층 원무과')">🏥 원무과 방문 안내</button>
-    </div>
-  </div>
-</div>
- 
-</div><footer>
-  <strong>해운대나눔과행복병원</strong> | 의료법인 나눔과행복의료재단<br>
-  본 계산기는 참고용이며 실제 청구금액과 다를 수 있습니다 · 일반병동 2026.7.1 간호 1등급 수가 반영
-</footer>
- 
-<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
- 
-<script>
-const DAILY_BASE={
-  general:{'2인실':{d15:162560,d16:148280,d31:141140},'3인실':{d15:142390,d16:130150,d31:124030},'4인실':{d15:121990,d16:111790,d31:106690}},
-  integrated:{'2인실':{d15:243450,d16:219090,d31:206920},'3인실':{d15:228310,d16:205470,d31:194050},'4인실':{d15:213180,d16:191850,d31:181190},'8인실':{d15:182020,d16:163810,d31:154700}}
-};
-const TABLE_REF={
-  general:{'고관절':{'2인실':351,'3인실':290,'4인실':240},'척수/뇌질환':{'2인실':341,'3인실':280,'4인실':230},'희귀난치성':{'2인실':251,'3인실':190,'4인실':140},'중증질환자':{'2인실':171,'3인실':110,'4인실':60},'의료급여2종':{'2인실':251,'3인실':190,'4인실':140},'의료급여2종장애인':{'2인실':141,'3인실':80,'4인실':30},'차상위2종':{'4인실':200},'의료급여1종':{'2인실':141,'3인실':80,'4인실':30}},
-  integrated:{'고관절':{'2인실':430,'3인실':340,'4인실':260,'8인실':240},'척수/뇌질환':{'2인실':420,'3인실':330,'4인실':250,'8인실':230},'희귀난치성':{'2인실':370,'3인실':270,'4인실':200,'8인실':180},'중증질환자':{'2인실':270,'3인실':170,'4인실':90,'8인실':80},'의료급여2종':{'2인실':370,'3인실':270,'4인실':200,'8인실':180},'의료급여2종장애인':{'2인실':200,'3인실':110,'4인실':30,'8인실':30},'차상위2종':{'4인실':200},'의료급여1종':{'2인실':200,'3인실':110,'4인실':30,'8인실':30}}
-};
-const ROOM_FIXED={'2인실':0.40,'3인실':0.30,'4인실':null,'8인실':null};
-const COPAY_OK=['4인실','8인실'];
-const PT_RATE={'고관절':0.20,'척수/뇌질환':0.20,'희귀난치성':0.10,'중증질환자':0.05,'의료급여2종':0.10,'의료급여2종장애인':null,'차상위2종':0.14,'의료급여1종':null,'차상위1종':null};
-const PT_LABEL={'고관절':'고관절','척수/뇌질환':'척수/뇌질환','희귀난치성':'희귀난치성','중증질환자':'중증질환자','의료급여2종':'의료급여 2종','의료급여2종장애인':'의료급여 2종 장애인','차상위2종':'차상위 2종','의료급여1종':'의료급여 1종','차상위1종':'차상위 1종'};
-const SPECIAL_BILLING=['의료급여2종장애인','의료급여1종','차상위1종'];
-const REHAB_PATIENTS=['고관절','척수/뇌질환'];
-const REHAB_MONTHLY_MIN=100;
-const REHAB_MONTHLY_MAX=117;
- 
-let ward='general',room='2인실',patient='고관절',days=30;
- 
-function scrollToSection(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
- 
-function selectWard(w,el){
-  ward=w;
-  document.querySelectorAll('#ward-grid .opt').forEach(e=>e.classList.remove('active'));
-  el.classList.add('active');
-  renderRooms();updatePatientNote();calc();
-}
-function getRooms(){return Object.keys(DAILY_BASE[ward]);}
-function renderRooms(){
-  const rooms=getRooms();
-  if(!rooms.includes(room))room=rooms[0];
-  const grid=document.getElementById('room-grid');
-  grid.className=rooms.length===4?'grid4':'grid3';
-  grid.innerHTML='';
-  rooms.forEach(r=>{
-    const fr=ROOM_FIXED[r];
-    const ok=COPAY_OK.includes(r);
-    const d=document.createElement('div');
-    d.className='opt'+(r===room?' active':'');
-    const rt=fr!=null?`<span class="tag tag-warn">${fr*100}% 고정</span>`:`<span class="tag tag-ok">질환별</span>`;
-    const lt=`<span class="tag ${ok?'tag-ok':'tag-no'}">${ok?'상한제 ○':'상한제 ✕'}</span>`;
-    d.innerHTML=`<div class="opt-label">${r}</div><div class="opt-tags">${rt}${lt}</div>`;
-    d.onclick=()=>{room=r;document.querySelectorAll('#room-grid .opt').forEach(e=>e.classList.remove('active'));d.classList.add('active');updateRoomNote();updatePatientNote();calc();};
-    grid.appendChild(d);
-  });
-  updateRoomNote();
-}
-function updateRoomNote(){
-  const fr=ROOM_FIXED[room];
-  document.getElementById('room-note').textContent=fr!=null
-    ?`⚠️ ${room}은 질환 구분과 무관하게 본인부담 ${fr*100}%가 고정 적용되며, 본인부담상한제는 적용되지 않습니다.`
-    :`✅ ${room}은 질환·환자 구분에 따른 본인부담률이 적용되며, 본인부담상한제 적용이 가능합니다.`;
-}
-function selectPatient(p,el){
-  patient=p;
-  document.querySelectorAll('#patient-grid .opt').forEach(e=>e.classList.remove('active'));
-  el.classList.add('active');
-  updatePatientNote();
-  calc();
-}
-function updatePatientNote(){
-  const rate=PT_RATE[patient];const fr=ROOM_FIXED[room];
-  const note=document.getElementById('patient-note');
-  if(SPECIAL_BILLING.includes(patient)) note.textContent=`${PT_LABEL[patient]}은 식대 + 전액본인부담 + 비급여 방식으로 산정됩니다. 상급병실료를 포함한 상세 내역은 6층 원무과로 문의해 주세요.`;
-  else if(fr!=null) note.textContent=`현재 ${room} 선택 시 질환 구분 본인부담률(${rate*100}%)과 무관하게 상급병실 정책 요율인 ${fr*100}%가 고정 적용됩니다.`;
-  else note.textContent=`${PT_LABEL[patient]}의 기본 본인부담률은 ${rate*100}%입니다.`;
-}
-function setDays(v){
-  document.getElementById('days-slider').value=v;
-  document.querySelectorAll('.day-badge').forEach(b=>{
-    b.classList.toggle('on',parseInt(b.textContent)===v);
-  });
-  updateDays(v);
-}
-function updateDays(v){
-  days=parseInt(v);
-  document.getElementById('days-out').textContent=days+'일';
-  const note=document.getElementById('period-note');
-  if(days<=15) note.textContent='📌 1~15일 구간 (단회복기): 해당 기준 요금이 적용됩니다.';
-  else if(days<=30) note.textContent='📋 16~30일 구간: 해당 구간 요금이 적용됩니다.';
-  else note.textContent='📋 31일 이상 구간: 해당 구간 요금이 적용됩니다.';
-  calc();
-}
-function getDailyAmtForDays(r,stayDays){
-  const b=DAILY_BASE[ward][r];if(!b)return 0;
-  return stayDays<=15?b.d15:stayDays<=30?b.d16:b.d31;
-}
-function getDailyAmt(r){return getDailyAmtForDays(r,days);}
-function getTotalAmt(r,stayDays){
-  const b=DAILY_BASE[ward][r];if(!b)return 0;
-  const firstDays=Math.min(stayDays,15);
-  const middleDays=Math.min(Math.max(stayDays-15,0),15);
-  const longDays=Math.max(stayDays-30,0);
-  return b.d15*firstDays+b.d16*middleDays+b.d31*longDays;
-}
-function fmt(n){return n.toLocaleString('ko-KR')+'원';}
-function renderMonthlyEstimate(baseRoomCopayWon){
-  const grid=document.getElementById('monthly-estimate-grid');
-  grid.innerHTML='';
-  const baseManwon=TABLE_REF[ward]?.[patient]?.[room];
-  for(let month=1;month<=3;month++){
-    const totalManwon=baseManwon==null?null:baseManwon*month;
-    const hasRehab=REHAB_PATIENTS.includes(patient);
-    const rehabMin=REHAB_MONTHLY_MIN*month;
-    const rehabMax=REHAB_MONTHLY_MAX*month;
-    const rehabText=hasRehab
-      ?`${rehabMin.toLocaleString('ko-KR')}~${rehabMax.toLocaleString('ko-KR')}만원`
-      :'해당 없음';
-    const roomCopayWon=baseRoomCopayWon===null
-      ?null
-      :Math.round(baseRoomCopayWon*month);
-    const roomText=roomCopayWon===null
-      ?'별도 산정'
-      :fmt(roomCopayWon);
-    const totalText=totalManwon===null
-      ?'원무팀 문의'
-      :`${totalManwon.toLocaleString('ko-KR')}만원 이상`;
-    const card=document.createElement('div');
-    card.className='monthly-estimate-card';
-    card.innerHTML=`<div class="monthly-estimate-month">${month}개월</div>
-      <div class="monthly-estimate-label">예상 총 병원비</div>
-      <div class="monthly-estimate-total">${totalText}</div>
-      <div class="monthly-estimate-breakdown">
-        <div class="monthly-estimate-detail"><span>재활치료료</span><strong>${rehabText}</strong></div>
-        <div class="monthly-estimate-detail"><span>병실료(본인부담)</span><strong>${roomText}</strong></div>
-      </div>`;
-    grid.appendChild(card);
-  }
-}
-function calc(){
-  const daily=getDailyAmt(room);const total=getTotalAmt(room,days);
-  const fr=ROOM_FIXED[room];const baseRate=PT_RATE[patient];
-  const ar=fr!=null?fr:baseRate;
-  document.getElementById('r-room').textContent=(ward==='general'?'일반병동':'통합병동')+' '+room;
-  document.getElementById('r-patient').textContent=PT_LABEL[patient];
-  document.getElementById('r-days').textContent=days+'일';
-  document.getElementById('r-daily').textContent=fmt(daily);
-  document.getElementById('r-total').textContent=fmt(total);
-  document.getElementById('r-basis').textContent=ward==='general'
-    ?'2026.7.1 · 간호 1등급'
-    :(room==='2인실'?'2026.1.1 · 통합 2인실':'2026년 통합병동 기준');
-  const calculatedCopay=SPECIAL_BILLING.includes(patient)||ar===null
-    ?null
-    :Math.round(total*ar);
-  renderMonthlyEstimate(calculatedCopay);
-  
-  if(SPECIAL_BILLING.includes(patient)){
-    document.getElementById('r-daily-copay').textContent='별도 산정';
-    document.getElementById('r-rate').textContent=`${PT_LABEL[patient]} (별도 산정)`;
-    document.getElementById('r-copay').textContent='원무팀 문의';
-    document.getElementById('total-sub').textContent='상급병실료 및 급여 심사 기준 확인 필요';
-    document.getElementById('compare-wrap').style.display='none';return;
-  }
-  
-  document.getElementById('r-rate').textContent=fr!=null?`${fr*100}% (${room} 고정)`:`${ar*100}% (${PT_LABEL[patient]})`;
-  document.getElementById('r-daily-copay').textContent=fmt(Math.round(daily*ar));
-  const copay=calculatedCopay;
-  document.getElementById('r-copay').textContent=fmt(copay);
-  document.getElementById('total-sub').textContent=`전체 입원료 ${fmt(total)}의 ${ar*100}%`;
-  const rooms=getRooms();
-  const cg=document.getElementById('compare-grid');cg.innerHTML='';
-  rooms.forEach(r=>{
-    const t2=getTotalAmt(r,days);
-    const fr2=ROOM_FIXED[r];const ar2=fr2!=null?fr2:(PT_RATE[patient]??null);
-    const isA=r===room;
-    const card=document.createElement('div');
-    card.className='compare-card'+(isA?' active':'');
-    const ref=TABLE_REF[ward][patient]?.[r];
-    let cs='원무팀 문의';
-    if(!SPECIAL_BILLING.includes(patient)&&ar2!==null)cs=fmt(Math.round(t2*ar2));
-    const badge=isA?'<span class="compare-room-badge">선택중</span>':'';
-    const refNote=ref?`<div class="compare-ref">표 기준 한달: 약 ${ref}만원↑</div>`:'';
-    card.innerHTML=`<div class="compare-room">${r}${badge}</div><div class="compare-amount">${cs}</div>${refNote}`;
-    cg.appendChild(card);
-  });
-  document.getElementById('compare-wrap').style.display='block';
-}
- 
-window.addEventListener('scroll',()=>{
-  document.getElementById('scrollTop').classList.toggle('show',window.scrollY>300);
-});
 
-renderRooms();updateRoomNote();updatePatientNote();
-updateDays(30);calc();
-</script>
+    <!-- Official Policy Guidelines & Tips Accordion -->
+    <div class="section-wrap" id="tips" style="margin-top: 48px;">
+      <h2 style="font-size: 20px; font-weight:800; color:var(--slate-900); margin-bottom: 20px; border-bottom: 2px solid var(--slate-200); padding-bottom: 8px;">
+        💡 입원 전 필수 확인 고시 정보 (보건복지부 / 심평원 / 근로복지공단)
+      </h2>
+      <div class="faq-grid">
+        <div class="faq-card">
+          <div class="faq-q">⚖️ 재활치료 입원료 수가 감액 제도(체감제)</div>
+          <div class="faq-a">
+            재활의료기관 집중 재활 기간 동안에는 입원 기간이 길어짐에 따라 기본 입원료가 감액(체감) 적용됩니다. <strong>1~15일(100%), 16~30일(90%), 31일 이상(85%)</strong> 수가가 차등 설계되어 있으며, 본 계산기에는 이 체감 요율이 정확하게 자동 누적 계산됩니다.
+          </div>
+        </div>
+        <div class="faq-card">
+          <div class="faq-q">🩹 산재보험(근로복지공단) 상급병실료 지급 제한</div>
+          <div class="faq-a">
+            근로복지공단 산재보험 승인 환자는 4인실/8인실 등의 일반 병실 사용 시 본인부담금이 100% 면제(0원)됩니다. 단, 환자의 개인 선호에 의해 2인실/3인실 등 상급병실을 선택할 경우 <strong>상급병실 차액(상급병실료 - 4인실 입원료)은 산재 급여 대상에서 제외되어 전액 환자가 부담</strong>하셔야 합니다.
+          </div>
+        </div>
+        <div class="faq-card">
+          <div class="faq-q">📉 2인실 및 3인실 본인부담 고정율 정책</div>
+          <div class="faq-a">
+            보건복지부 대안 정책에 따라 상급병실(2인실 40%, 3인실 30%)은 산정특례(희귀/중증) 등록 환자나 의료급여 대상자라 할지라도 <strong>동일한 고정 요율이 적용</strong>되며, 연간 본인부담상한제 환급 대상 기준액 산정에서도 완전히 제외되므로 장기 입원 시 주의가 필요합니다.
+          </div>
+        </div>
+        <div class="faq-card">
+          <div class="faq-q">⏳ 집중 재활 치료기간 초과 시의 수가 변경</div>
+          <div class="faq-a">
+            심평원이 지정한 질환별 최대 입원 인정 기간(뇌/척수 180일, 고관절 30일 등)을 초과하여 계속 입원해 있는 경우, 집중재활 요율이 아닌 일반 장기 입원 요율이 적용되어 일일 본인부담금이 증액될 수 있으므로 원무과 및 전문의와의 입원 연장 심사가 필요합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer information -->
+  <footer>
+    <strong>의료법인 나눔과행복의료재단 해운대나눔과행복병원</strong><br>
+    대표번호: 051-725-0503 | 부산광역시 해운대구 좌동순환로 505 (6층 원무팀)<br>
+    <span style="opacity: 0.7">본 모의 계산기는 보건복지부/건강보험심사평가원의 2026년 수가를 표준으로 하며, 세부 처방 및 환자 상태에 따라 실제 청구금액과 다를 수 있습니다.</span>
+  </footer>
+
+  <!-- Floating Mobile Action Bar -->
+  <div class="mobile-cta">
+    <div class="mobile-cta-inner">
+      <div class="mobile-cta-text">
+        <span class="mobile-cta-label">예상 본인부담금</span>
+        <span class="mobile-cta-price" id="mobile-price">0원</span>
+      </div>
+      <button class="btn-action-primary" style="width: auto; padding: 10px 20px; font-size: 13px;" onclick="window.scrollTo({top: document.getElementById('calc-section').offsetTop - 90, behavior: 'smooth'})">
+        상세 내역 보기
+      </button>
+    </div>
+  </div>
+
+  <!-- External Script Resources -->
+  <script src="data.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
