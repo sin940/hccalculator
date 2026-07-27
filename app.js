@@ -157,6 +157,13 @@ function setupEventListeners() {
     selectedCeilingDecile = e.target.value;
     calculateAll();
   });
+
+  const longStayCheckbox = document.getElementById('long-stay-checkbox');
+  if (longStayCheckbox) {
+    longStayCheckbox.addEventListener('change', () => {
+      calculateAll();
+    });
+  }
 }
 
 function updateDaysPresetButtons() {
@@ -451,10 +458,23 @@ function calculateAll() {
   let ceilingTextHtml = '';
   if (insObj.type === 'nhi') {
     const decileObj = CEILING_THRESHOLDS_2026[selectedCeilingDecile];
-    const currentYearCeiling = decileObj.threshold;
+    const longStayCheckbox = document.getElementById('long-stay-checkbox');
+    const isLongStay = longStayCheckbox && longStayCheckbox.checked;
+    
+    // 요양병원 120일 초과 여부에 따른 상한액 산정
+    const currentYearCeiling = isLongStay ? decileObj.longStayThreshold : decileObj.threshold;
+    const maxPrepay = isLongStay ? MAX_PREPAY_CEILING_2026.longStay : MAX_PREPAY_CEILING_2026.standard;
     
     const subjectToCeiling = benefitCopayTotal;
     const isExceedCeiling = subjectToCeiling > currentYearCeiling;
+    const isExceedPrepay = subjectToCeiling >= maxPrepay;
+    
+    let prepayNotice = ``;
+    if (isExceedPrepay) {
+      prepayNotice = `<br><span style="color:#d97706; font-weight:700; font-size:12px;">★ 사전급여 최고상한액(${fmt(maxPrepay)}) 초과: 초과 금액은 병원에서 즉시 공단 부담으로 처리되어 환자는 최고상한액까지만 납부합니다.</span>`;
+    } else {
+      prepayNotice = `<br><span style="color:var(--slate-500); font-size:11px;">※ 2026년 사전급여 최고상한액: ${fmt(maxPrepay)} (초과 시 병원 사전 공단청구 적용)</span>`;
+    }
     
     if (isExceedCeiling) {
       const refundEst = subjectToCeiling - currentYearCeiling;
@@ -463,8 +483,9 @@ function calculateAll() {
         <span class="notice-box-icon">💡</span>
         <div>
           <strong>본인부담상한제 환급 가능 대상 (예상)</strong><br>
-          <span>급여 본인부담금(${fmt(subjectToCeiling)})이 선택하신 ${decileObj.name} 연간 상한액(${fmt(currentYearCeiling)})을 초과합니다.<br>
+          <span>급여 본인부담금(${fmt(subjectToCeiling)})이 선택하신 ${decileObj.name} ${isLongStay ? '요양병원 120일 초과 ' : ''}연간 상한액(${fmt(currentYearCeiling)})을 초과합니다.<br>
           연간 누적 청구 시 약 <strong>${fmt(refundEst)}</strong>을 건강보험공단에서 환급받으실 수 있습니다. (상급병실 차액, 식대 제외)</span>
+          ${prepayNotice}
         </div>
       `;
     } else {
@@ -474,7 +495,8 @@ function calculateAll() {
         <span class="notice-box-icon">ℹ️</span>
         <div>
           <strong>본인부담상한액 한도 이내 (환급 대상 아님)</strong><br>
-          <span>급여 본인부담금(${fmt(subjectToCeiling)})이 ${decileObj.name} 연간 상한액(${fmt(currentYearCeiling)}) 이하입니다. 상한액까지 약 <strong>${fmt(remaining)}</strong>의 누적 한도가 남아있습니다.</span>
+          <span>급여 본인부담금(${fmt(subjectToCeiling)})이 ${decileObj.name} ${isLongStay ? '요양병원 120일 초과 ' : ''}연간 상한액(${fmt(currentYearCeiling)}) 이하입니다. 상한액까지 약 <strong>${fmt(remaining)}</strong>의 누적 한도가 남아있습니다.</span>
+          ${prepayNotice}
         </div>
       `;
     }

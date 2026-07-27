@@ -73,16 +73,23 @@ const COPAY_RATES = {
   workers_comp: { name: '산재', rate: 0.00, type: 'workers_comp', label: '근로복지공단 산재보험' }
 };
 
-// 2026 Inpatient Ceiling Thresholds (Annual)
+// 2026 Inpatient Ceiling Thresholds (Annual) - MoHW / HIRA Standard
 const CEILING_THRESHOLDS_2026 = {
-  decile_1: { name: '1분위', threshold: 900000 },
-  decile_2_3: { name: '2~3분위', threshold: 1120000 },
-  decile_4_5: { name: '4~5분위', threshold: 1730000 },
-  decile_6_7: { name: '6~7분위', threshold: 3260000 },
-  decile_8: { name: '8분위', threshold: 4460000 },
-  decile_9: { name: '9분위', threshold: 5360000 },
-  decile_10: { name: '10분위', threshold: 8430000 }
+  decile_1: { name: '1구간 (1분위)', threshold: 900000, longStayThreshold: 1430000 },
+  decile_2_3: { name: '2구간 (2~3분위)', threshold: 1120000, longStayThreshold: 1810000 },
+  decile_4_5: { name: '3구간 (4~5분위)', threshold: 1730000, longStayThreshold: 2450000 },
+  decile_6_7: { name: '4구간 (6~7분위)', threshold: 3260000, longStayThreshold: 4040000 },
+  decile_8: { name: '5구간 (8분위)', threshold: 4460000, longStayThreshold: 5800000 },
+  decile_9: { name: '6구간 (9분위)', threshold: 5360000, longStayThreshold: 6980000 },
+  decile_10: { name: '7구간 (10분위)', threshold: 8430000, longStayThreshold: 10960000 }
 };
+
+// 2026 Prepay Ceiling Max Amounts
+const MAX_PREPAY_CEILING_2026 = {
+  standard: 8430000,
+  longStay: 10960000
+};
+
 
 // Rehab treatment daily cost constants before insurance
 const REHAB_COST_DAILY_BEFORE_INS = {

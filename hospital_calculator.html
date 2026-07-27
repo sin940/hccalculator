@@ -240,16 +240,23 @@
           </p>
           
           <div class="form-group">
-            <span class="label-meta">건강보험료 분위 또는 소득 기준 선택</span>
+            <span class="label-meta">건강보험료 분위 또는 소득 기준 선택 (2026년 본인부담상한액 기준)</span>
             <select class="input-field" id="ceiling-select">
-              <option value="decile_1">1분위 (하위 10% / 월 건강보험료 5.2만원 이하) - 상한액 90만원</option>
-              <option value="decile_2_3">2~3분위 (월 건강보험료 7.8만원 이하) - 상한액 110만원</option>
-              <option value="decile_4_5">4~5분위 (월 건강보험료 11.8만원 이하) - 상한액 170만원</option>
-              <option value="decile_6_7">6~7분위 (월 건강보험료 17.6만원 이하) - 상한액 310만원</option>
-              <option value="decile_8">8분위 (월 건강보험료 25.8만원 이하) - 상한액 430만원</option>
-              <option value="decile_9">9분위 (월 건강보험료 44.7만원 이하) - 상한액 530만원</option>
-              <option value="decile_10">10분위 (상위 10% / 월 건강보험료 44.7만원 초과) - 상한액 880만원</option>
+              <option value="decile_1">1구간 (1분위 / 저소득) - 상한액 90만원 (120일 초과: 143만원)</option>
+              <option value="decile_2_3">2구간 (2~3분위) - 상한액 112만원 (120일 초과: 181만원)</option>
+              <option value="decile_4_5">3구간 (4~5분위) - 상한액 173만원 (120일 초과: 245만원)</option>
+              <option value="decile_6_7">4구간 (6~7분위) - 상한액 326만원 (120일 초과: 404만원)</option>
+              <option value="decile_8">5구간 (8분위) - 상한액 446만원 (120일 초과: 580만원)</option>
+              <option value="decile_9">6구간 (9분위) - 상한액 536만원 (120일 초과: 698만원)</option>
+              <option value="decile_10">7구간 (10분위 / 고소득) - 상한액 843만원 (120일 초과: 1,096만원)</option>
             </select>
+          </div>
+
+          <div class="form-group" style="margin-top: 12px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--slate-700); cursor: pointer; background: var(--slate-100); padding: 10px 14px; border-radius: 8px;">
+              <input type="checkbox" id="long-stay-checkbox" style="width: 16px; height: 16px; accent-color: var(--teal-600);">
+              요양병원 120일 초과 입원 기준 적용 (1구간~7구간 별도 상한액 적용)
+            </label>
           </div>
 
           <div id="ceiling-alert" class="notice-box">
