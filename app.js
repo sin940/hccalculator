@@ -724,5 +724,108 @@ function fmt(n) {
   return n.toLocaleString('ko-KR') + '원';
 }
 
+// Ambulance modal controls
+function openAmbulanceModal() {
+  const modal = document.getElementById('ambulance-modal');
+  if (modal) {
+    modal.classList.add('show');
+  }
+}
+
+function closeAmbulanceModal() {
+  const modal = document.getElementById('ambulance-modal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Close modal if clicked outside content
+window.addEventListener('click', (e) => {
+  const ambModal = document.getElementById('ambulance-modal');
+  if (e.target === ambModal) {
+    closeAmbulanceModal();
+  }
+  const dirModal = document.getElementById('directory-modal');
+  if (e.target === dirModal) {
+    closeDirectoryModal();
+  }
+});
+
+// Directory modal controls & dynamic rendering
+let activeDirectoryTab = 'all';
+
+function openDirectoryModal() {
+  const modal = document.getElementById('directory-modal');
+  if (modal) {
+    modal.classList.add('show');
+    renderDirectoryTable();
+  }
+}
+
+function closeDirectoryModal() {
+  const modal = document.getElementById('directory-modal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+function renderDirectoryTable(filterText = '') {
+  const tbody = document.getElementById('directory-tbody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = '';
+  const query = filterText.toLowerCase().trim();
+  
+  CONTACT_DIRECTORY.forEach(item => {
+    // Filter by tab
+    if (activeDirectoryTab !== 'all' && item.category !== activeDirectoryTab) {
+      return;
+    }
+    
+    // Filter by query
+    if (query && !item.name.toLowerCase().includes(query) && !item.tel.includes(query) && !item.fax.includes(query)) {
+      return;
+    }
+    
+    const tr = document.createElement('tr');
+    
+    const catBadge = item.category === 'org' ? '<span class="directory-badge badge-org">기관</span>' : '<span class="directory-badge badge-hosp">병원</span>';
+    
+    const telLink = item.tel !== '-' ? `<a href="tel:${item.tel}" class="directory-table-tel">${item.tel}</a>` : '-';
+    const erLink = item.er !== '-' ? `<a href="tel:${item.er}" class="directory-table-er">🚨 ${item.er}</a>` : '-';
+    
+    const searchQuery = item.query || item.name;
+    const naverLink = `<a href="https://search.naver.com/search.naver?query=${encodeURIComponent(searchQuery)}" target="_blank" rel="noopener noreferrer" style="color: #03c75a; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11px;"><span style="background: #03c75a; color: white; border-radius: 3px; padding: 1px 3px; font-size: 9px; font-weight: 800; font-family: sans-serif; line-height: 1;">N</span> 검색</a>`;
+
+    tr.innerHTML = `
+      <td>${catBadge}</td>
+      <td style="font-weight: 600; color: var(--slate-900);">${item.name}</td>
+      <td>${telLink}</td>
+      <td>${erLink}</td>
+      <td style="font-family: var(--font-en); color: var(--slate-600);">${item.fax}</td>
+      <td style="text-align: center;">${naverLink}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Hook search input events
+document.getElementById('directory-search')?.addEventListener('input', (e) => {
+  renderDirectoryTable(e.target.value);
+});
+
+function switchDirectoryTab(tab) {
+  activeDirectoryTab = tab;
+  document.querySelectorAll('.directory-tab').forEach(btn => {
+    if (btn.getAttribute('data-tab') === tab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  const searchInput = document.getElementById('directory-search');
+  renderDirectoryTable(searchInput ? searchInput.value : '');
+}
+
 // Launch Calculator
 init();

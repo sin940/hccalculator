@@ -100,3 +100,37 @@ const REHAB_COST_DAILY_BEFORE_INS = {
 
 const ROOM_COP_FIXED = { '2인실': 0.40, '3인실': 0.30 };
 const MEAL_COST_PER_MEAL = 8100;
+
+// Important Contacts & FAX Directory (from User Specifications)
+const CONTACT_DIRECTORY = [
+  // 1. 기관 (Organizations)
+  { category: 'org', name: '두리발 (장애인 콜택시)', tel: '1555-1114', er: '-', fax: '0502-922-8001', query: '부산 두리발' },
+  { category: 'org', name: '햇님 약국 (해운대)', tel: '051-747-0880', er: '-', fax: '051-747-0881', query: '해운대 햇님약국' },
+  { category: 'org', name: '해운대나눔과행복병원 3층 원무', tel: '051-744-0123', er: '-', fax: '051-726-0544', query: '해운대나눔과행복병원' },
+  { category: 'org', name: '해운대나눔과행복병원 총무팀', tel: '051-726-0812', er: '-', fax: '051-726-0564', query: '해운대나눔과행복병원' },
+  { category: 'org', name: '근로복지공단 본부', tel: '1588-0075', er: '-', fax: '0505-042-2200', query: '근로복지공단' },
+  { category: 'org', name: '근로복지공단 부산동부지사', tel: '1588-0075', er: '-', fax: '0505-067-2102', query: '근로복지공단 부산동부지사' },
+  
+  // 2. 병원 (Hospitals & ER)
+  { category: 'hosp', name: '해운대백병원', tel: '051-797-0100', er: '051-797-1119', fax: '051-797-0298', query: '인제대학교 해운대백병원' },
+  { category: 'hosp', name: '좋은강안병원', tel: '051-625-0900', er: '051-610-9119', fax: '051-621-1500', query: '좋은강안병원' },
+  { category: 'hosp', name: '세웅병원', tel: '051-500-9700', er: '051-500-9119', fax: '051-500-9393 / 051-989-5008', query: '금정구 세웅병원' },
+  { category: 'hosp', name: '부산센텀병원', tel: '051-750-5000', er: '051-750-5119', fax: '051-751-1095', query: '센텀종합병원' },
+  { category: 'hosp', name: '부산대학교병원', tel: '051-240-7000', er: '051-240-7000', fax: '051-247-3216', query: '부산대학교병원' },
+  { category: 'hosp', name: '양산부산대학교병원', tel: '1577-7512', er: '055-360-1476', fax: '-', query: '양산부산대학교병원' },
+  { category: 'hosp', name: '부산백병원', tel: '051-890-6114', er: '051-890-5995', fax: '051-891-6438', query: '인제대학교 부산백병원' },
+  { category: 'hosp', name: '동아대학교병원 (권역응급의료센터)', tel: '051-240-2000', er: '051-240-5300', fax: '-', query: '동아대학교 의료원' },
+  { category: 'hosp', name: '동의병원', tel: '051-867-5101', er: '051-850-8777', fax: '051-867-5162', query: '동의병원' },
+  { category: 'hosp', name: 'BHS한서병원', tel: '1666-8275', er: '051-998-0118', fax: '051-751-4372', query: 'BHS한서병원' },
+  { category: 'hosp', name: '부산의료원', tel: '051-507-3000', er: '051-607-2140', fax: '051-507-3001', query: '부산광역시의료원' },
+  { category: 'hosp', name: '고신대학교복음병원', tel: '051-990-6114', er: '051-990-6200', fax: '051-990-3005', query: '고신대학교복음병원' },
+  { category: 'hosp', name: '메드윌병원', tel: '051-519-8000', er: '-', fax: '051-519-8007', query: '메드윌병원' },
+  { category: 'hosp', name: '워크재활병원', tel: '051-714-4119', er: '-', fax: '051-955-3118', query: '워크재활병원' },
+  { category: 'hosp', name: '센텀이루다병원', tel: '051-608-7000', er: '-', fax: '051-745-8389', query: '센텀이루다요양병원' },
+  { category: 'hosp', name: '광혜병원', tel: '051-503-2111', er: '051-504-2119', fax: '051-590-3397', query: '광혜병원' },
+  { category: 'hosp', name: '대동병원', tel: '051-554-1233', er: '051-550-9390', fax: '-', query: '대동병원' },
+  { category: 'hosp', name: '큰솔1병원', tel: '051-322-9000', er: '-', fax: '051-322-9300', query: '큰솔병원' },
+  { category: 'hosp', name: '큰솔2병원', tel: '051-322-9000', er: '-', fax: '051-322-0053', query: '큰솔병원' },
+  { category: 'hosp', name: '파크사이드병원', tel: '051-629-8000', er: '-', fax: '051-429-8188', query: '파크사이드재활의학병원' },
+  { category: 'hosp', name: '새봄병원', tel: '051-503-8288', er: '-', fax: '051-501-1555', query: '새봄병원' }
+];

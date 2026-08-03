@@ -133,31 +133,219 @@ nav {
   color: var(--white);
 }
 
-.nav-ambulance-info {
-  color: var(--slate-300);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 12px;
-  display: inline-flex;
+/* Ambulance Digital Business Card Styling */
+.ambulance-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-ko);
+  text-align: left;
+}
+.ambulance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #e11d48; /* Red point matching central 911 theme */
+  padding-bottom: 8px;
+}
+.ambulance-logo-wrap {
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.nav-ambulance-info a {
-  color: var(--white);
-  text-decoration: none;
+.ambulance-logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff5f5;
+  border: 2px solid #e11d48;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e11d48;
+  font-weight: 800;
+  font-size: 10px;
+}
+.ambulance-company {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--slate-900);
+  line-height: 1.1;
+}
+.ambulance-company span {
+  font-size: 8px;
+  color: var(--slate-500);
   font-weight: 600;
-  border-bottom: 1px dashed var(--slate-300);
-  transition: var(--transition);
+  display: block;
+  letter-spacing: 0.2px;
+  margin-top: 1px;
 }
-.nav-ambulance-info a:hover {
-  color: var(--success);
-  border-bottom-color: var(--success);
+.ambulance-badge {
+  background: #e11d48;
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  display: inline-block;
+}
+.ambulance-badge-sub {
+  background: var(--slate-800);
+  color: var(--white);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-top: 3px;
+  display: block;
+  text-align: center;
 }
 
-@media (max-width: 992px) {
-  .nav-ambulance-info {
-    display: none !important;
-  }
+.ambulance-card-body {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ambulance-services {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--slate-600);
+}
+.ambulance-services-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ambulance-services ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ambulance-services li {
+  margin-bottom: 2px;
+}
+.ambulance-services li::before {
+  content: "• ";
+  color: #e11d48;
+  font-weight: bold;
+}
+
+.ambulance-name-section {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ambulance-driver-title {
+  font-size: 9px;
+  color: var(--slate-500);
+  font-weight: 500;
+}
+.ambulance-driver-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-top: 1px;
+}
+
+.ambulance-contacts-section {
+  background: var(--slate-50);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  border: 1px dashed var(--slate-200);
+}
+.ambulance-contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.ambulance-contact-row:last-child {
+  margin-bottom: 0;
+}
+.ambulance-contact-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--slate-600);
+}
+.ambulance-contact-link {
+  font-family: var(--font-en);
+  font-size: 12px;
+  font-weight: 800;
+  color: #e11d48;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.ambulance-contact-link:hover {
+  text-decoration: underline;
+}
+
+/* Ambulance Popup Modal */
+.ambulance-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  backdrop-filter: blur(4px);
+  padding: 16px;
+}
+.ambulance-modal.show {
+  display: flex;
+  opacity: 1;
+}
+.ambulance-modal-content {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  max-width: 440px;
+  width: 100%;
+  position: relative;
+  transform: translateY(15px);
+  transition: transform 0.2s ease;
+}
+.ambulance-modal.show .ambulance-modal-content {
+  transform: translateY(0);
+}
+.ambulance-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(15, 23, 42, 0.05);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: var(--slate-600);
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.ambulance-modal-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 /* Hero Section */
@@ -844,6 +1032,132 @@ footer strong {
   .mobile-cta {
     display: block;
   }
+}
+
+/* Contact Directory Modal Styling */
+.directory-modal-content {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  max-width: 720px;
+  width: 100%;
+  position: relative;
+  transform: translateY(15px);
+  transition: transform 0.2s ease;
+  padding: 24px;
+}
+.ambulance-modal.show .directory-modal-content {
+  transform: translateY(0);
+}
+.directory-header {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.directory-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.directory-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  outline: none;
+  transition: var(--transition);
+}
+.directory-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.directory-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--slate-200);
+  padding-bottom: 8px;
+}
+.directory-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate-600);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.directory-tab.active {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.08);
+}
+.directory-table-container {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+}
+.directory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.directory-table th {
+  background: var(--slate-50);
+  color: var(--slate-700);
+  font-weight: 700;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-200);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.directory-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-100);
+  color: var(--slate-800);
+}
+.directory-table tr:hover td {
+  background: var(--slate-50);
+}
+.directory-table-tel {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.directory-table-tel:hover {
+  text-decoration: underline;
+}
+.directory-table-er {
+  color: #ef4444;
+  font-weight: 700;
+  text-decoration: none;
+}
+.directory-table-er:hover {
+  text-decoration: underline;
+}
+.directory-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.badge-org {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
+}
+.badge-hosp {
+  background: rgba(13, 148, 136, 0.08);
+  color: var(--teal-600);
 }
 
 /* Print Stylesheet */
