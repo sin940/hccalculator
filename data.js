@@ -99,7 +99,7 @@ const REHAB_COST_DAILY_BEFORE_INS = {
 };
 
 const ROOM_COP_FIXED = { '2인실': 0.40, '3인실': 0.30 };
-const MEAL_COST_PER_MEAL = 8100;
+let MEAL_COST_PER_MEAL = 8100;
 
 // Important Contacts & FAX Directory (from User Specifications)
 const CONTACT_DIRECTORY = [
