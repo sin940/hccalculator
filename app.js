@@ -56,165 +56,146 @@ function getRoomDisplayName(roomKey) {
   return roomObj ? roomObj.name : roomKey;
 }
 
-// Google Sheets Integration (Direct sync)
-const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1b3C17xxGgPlXzgsVmKLOkYmnDbnrjficXu73Sr4HF-g/export?format=csv';
+// Google Sheets Integration (Excel XLSX Direct sync)
+const GOOGLE_SHEET_XLSX_URL = 'https://docs.google.com/spreadsheets/d/1b3C17xxGgPlXzgsVmKLOkYmnDbnrjficXu73Sr4HF-g/export?format=xlsx';
 
-// CSV string parsing helper supporting quotes and commas
-function parseCSV(text) {
-  const lines = [];
-  let row = [""];
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    const next = text[i+1];
-    if (c === '"') {
-      if (inQuotes && next === '"') {
-        row[row.length - 1] += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (c === ',' && !inQuotes) {
-      row.push("");
-    } else if ((c === '\r' || c === '\n') && !inQuotes) {
-      if (c === '\r' && next === '\n') {
-        i++;
-      }
-      lines.push(row);
-      row = [""];
-    } else {
-      row[row.length - 1] += c;
-    }
+// Helper to look up values in 2D array by header name
+function getValueByHeader(row, headers, headerName) {
+  const idx = headers.indexOf(headerName);
+  if (idx !== -1 && row[idx] !== undefined) {
+    return row[idx].toString().trim();
   }
-  if (row.length > 1 || row[0] !== "") {
-    lines.push(row);
-  }
-  return lines;
+  return '';
 }
 
-// Parses Google Sheets CSV and overrides active database objects in memory
-function parseGoogleSheetCSV(csvText) {
-  const rows = parseCSV(csvText);
-  let currentSection = null;
-  
-  const tempInpatientRates = { general: {}, integrated: {} };
-  const tempRehabRates = {};
-  let tempMealCost = null;
-  const tempCeilingThresholds = {};
-  const tempContacts = [];
-  
-  rows.forEach(origRow => {
-    if (!origRow || origRow.length === 0 || !origRow[0]) return;
-    
-    // Safety guard: If the user pasted the entire comma-separated text into Column A, auto-split it
-    let row = origRow;
-    if (origRow.length === 1 || (origRow.length > 1 && origRow.slice(1).every(cell => !cell || !cell.trim()))) {
-      if (origRow[0].includes(',')) {
-        row = parseCSV(origRow[0])[0] || origRow;
-      }
-    }
+function getNumberValueByHeader(row, headers, headerName) {
+  const valStr = getValueByHeader(row, headers, headerName);
+  return parseInt(valStr.replace(/[^0-9]/g, ''), 10);
+}
 
-    const firstCell = row[0].trim();
-    if (firstCell.startsWith('[') && firstCell.endsWith(']')) {
-      currentSection = firstCell;
-      return;
-    }
-    
-    if (currentSection === '[INPATIENT_FEE_DB]') {
-      if (row.length >= 5) {
-        const type = row[0].trim(); // general / integrated
-        const roomSize = row[1].trim(); // 2인실, 3인실, etc.
-        const d15Val = parseInt(row[2].replace(/[^0-9]/g, ''), 10);
-        const d16Val = parseInt(row[3].replace(/[^0-9]/g, ''), 10);
-        const d31Val = parseInt(row[4].replace(/[^0-9]/g, ''), 10);
-        
-        if ((type === 'general' || type === 'integrated') && roomSize && !isNaN(d15Val)) {
-          if (!tempInpatientRates[type][roomSize]) {
-            tempInpatientRates[type][roomSize] = {};
-          }
-          tempInpatientRates[type][roomSize].d15 = d15Val;
-          tempInpatientRates[type][roomSize].d16 = isNaN(d16Val) ? d15Val : d16Val;
-          tempInpatientRates[type][roomSize].d31 = isNaN(d31Val) ? d15Val : d31Val;
-        }
-      }
-    } else if (currentSection === '[REHAB_COST]') {
-      if (row.length >= 2) {
-        const key = row[0].trim(); // intensive, standard, none
-        const val = parseInt(row[1].replace(/[^0-9]/g, ''), 10);
-        if (key && !isNaN(val)) {
-          tempRehabRates[key] = val;
-        }
-      }
-    } else if (currentSection === '[MEAL_COST]') {
-      if (row.length >= 2) {
-        const val = parseInt(row[1].replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(val)) {
-          tempMealCost = val;
-        }
-      }
-    } else if (currentSection === '[CEILING_THRESHOLDS]') {
-      if (row.length >= 4) {
-        const decileKey = row[0].trim(); // 1분위, 2~3분위, etc.
-        const sectionName = row[1].trim(); // 1구간, 2구간, etc.
-        const thresholdVal = parseInt(row[2].replace(/[^0-9]/g, ''), 10);
-        const longStayThresholdVal = parseInt(row[3].replace(/[^0-9]/g, ''), 10);
-        
-        // Map decile key to db key format
-        let dbKey = null;
-        if (decileKey.includes('1분위')) dbKey = 'decile_1';
-        else if (decileKey.includes('2~3분위')) dbKey = 'decile_2_3';
-        else if (decileKey.includes('4~5분위')) dbKey = 'decile_4_5';
-        else if (decileKey.includes('6~7분위')) dbKey = 'decile_6_7';
-        else if (decileKey.includes('8분위')) dbKey = 'decile_8';
-        else if (decileKey.includes('9분위')) dbKey = 'decile_9';
-        else if (decileKey.includes('10분위')) dbKey = 'decile_10';
-        
-        if (dbKey && !isNaN(thresholdVal)) {
-          tempCeilingThresholds[dbKey] = {
-            name: `${sectionName} (${decileKey})`,
-            threshold: thresholdVal,
-            longStayThreshold: isNaN(longStayThresholdVal) ? thresholdVal : longStayThresholdVal
-          };
-        }
-      }
-    } else if (currentSection === '[CONTACT_DIRECTORY]') {
-      if (row.length >= 5) {
-        const cat = row[0].trim();
-        const name = row[1].trim();
-        const tel = row[2].trim();
-        const er = row[3].trim();
-        const fax = row[4].trim();
-        const query = row[5] ? row[5].trim() : name;
-        if (cat && name) {
-          tempContacts.push({
-            category: cat,
-            name: name,
-            tel: tel,
-            er: er,
-            fax: fax,
-            query: query
-          });
-        }
-      }
-    }
-  });
-
-  // Mutate existing structures
-  if (Object.keys(tempInpatientRates.general).length > 0 || Object.keys(tempInpatientRates.integrated).length > 0) {
-    if (Object.keys(tempInpatientRates.general).length > 0) {
-      Object.assign(INPATIENT_FEE_DB.general, tempInpatientRates.general);
-    }
-    if (Object.keys(tempInpatientRates.integrated).length > 0) {
-      Object.assign(INPATIENT_FEE_DB.integrated, tempInpatientRates.integrated);
+// Find header row index containing specific keys
+function findHeaderRowIndex(rows, targetHeaders) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row && row.length > 0) {
+      const matched = targetHeaders.every(header => 
+        row.some(cell => cell !== null && cell !== undefined && cell.toString().trim() === header)
+      );
+      if (matched) return i;
     }
   }
+  return -1;
+}
+
+// Parse Inpatient Rates sheet
+function parseInpatientRates(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["유형", "인실", "1-15일"]);
+  if (headerIdx === -1) return;
+  
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempInpatientRates = { general: {}, integrated: {} };
+  
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const type = getValueByHeader(row, headers, "유형");
+    const roomSize = getValueByHeader(row, headers, "인실");
+    const d15Val = getNumberValueByHeader(row, headers, "1-15일");
+    const d16Val = getNumberValueByHeader(row, headers, "16-30일");
+    const d31Val = getNumberValueByHeader(row, headers, "31일이상");
+    
+    if ((type === 'general' || type === 'integrated') && roomSize && !isNaN(d15Val)) {
+      if (!tempInpatientRates[type][roomSize]) {
+        tempInpatientRates[type][roomSize] = {};
+      }
+      tempInpatientRates[type][roomSize].d15 = d15Val;
+      tempInpatientRates[type][roomSize].d16 = isNaN(d16Val) ? d15Val : d16Val;
+      tempInpatientRates[type][roomSize].d31 = isNaN(d31Val) ? d15Val : d31Val;
+    }
+  });
+  
+  if (Object.keys(tempInpatientRates.general).length > 0) {
+    Object.assign(INPATIENT_FEE_DB.general, tempInpatientRates.general);
+  }
+  if (Object.keys(tempInpatientRates.integrated).length > 0) {
+    Object.assign(INPATIENT_FEE_DB.integrated, tempInpatientRates.integrated);
+  }
+}
+
+// Parse Rehab Cost sheet
+function parseRehabRates(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["재활유형", "일일비용"]);
+  if (headerIdx === -1) return;
+  
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempRehabRates = {};
+  
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const key = getValueByHeader(row, headers, "재활유형");
+    const val = getNumberValueByHeader(row, headers, "일일비용");
+    if (key && !isNaN(val)) {
+      tempRehabRates[key] = val;
+    }
+  });
+  
   if (Object.keys(tempRehabRates).length > 0) {
     Object.assign(REHAB_COST_DAILY_BEFORE_INS, tempRehabRates);
   }
-  if (tempMealCost !== null) {
-    MEAL_COST_PER_MEAL = tempMealCost;
-  }
+}
+
+// Parse Meal Cost sheet
+function parseMealCost(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["식사구분", "식사료단가"]);
+  if (headerIdx === -1) return;
+  
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const val = getNumberValueByHeader(row, headers, "식사료단가");
+    if (!isNaN(val)) {
+      MEAL_COST_PER_MEAL = val;
+    }
+  });
+}
+
+// Parse Ceiling Thresholds sheet
+function parseCeilingThresholds(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["분위", "소득구간", "상한액"]);
+  if (headerIdx === -1) return;
+  
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempCeilingThresholds = {};
+  
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const decileKey = getValueByHeader(row, headers, "분위");
+    const sectionName = getValueByHeader(row, headers, "소득구간");
+    const thresholdVal = getNumberValueByHeader(row, headers, "상한액");
+    const longStayThresholdVal = getNumberValueByHeader(row, headers, "요양병원120일초과상한액");
+    
+    let dbKey = null;
+    if (decileKey.includes('1분위')) dbKey = 'decile_1';
+    else if (decileKey.includes('2~3분위')) dbKey = 'decile_2_3';
+    else if (decileKey.includes('4~5분위')) dbKey = 'decile_4_5';
+    else if (decileKey.includes('6~7분위')) dbKey = 'decile_6_7';
+    else if (decileKey.includes('8분위')) dbKey = 'decile_8';
+    else if (decileKey.includes('9분위')) dbKey = 'decile_9';
+    else if (decileKey.includes('10분위')) dbKey = 'decile_10';
+    
+    if (dbKey && !isNaN(thresholdVal)) {
+      tempCeilingThresholds[dbKey] = {
+        name: `${sectionName} (${decileKey})`,
+        threshold: thresholdVal,
+        longStayThreshold: isNaN(longStayThresholdVal) ? thresholdVal : longStayThresholdVal
+      };
+    }
+  });
+  
   if (Object.keys(tempCeilingThresholds).length > 0) {
     Object.assign(CEILING_THRESHOLDS_2026, tempCeilingThresholds);
     if (tempCeilingThresholds.decile_10) {
@@ -222,25 +203,194 @@ function parseGoogleSheetCSV(csvText) {
       MAX_PREPAY_CEILING_2026.longStay = tempCeilingThresholds.decile_10.longStayThreshold;
     }
   }
+}
+
+// Parse Contacts sheet
+function parseContactDirectory(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["구분", "이름", "전화번호"]);
+  if (headerIdx === -1) return;
+  
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempContacts = [];
+  
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const cat = getValueByHeader(row, headers, "구분");
+    const name = getValueByHeader(row, headers, "이름");
+    const tel = getValueByHeader(row, headers, "전화번호");
+    const er = getValueByHeader(row, headers, "응급실번호");
+    const fax = getValueByHeader(row, headers, "팩스번호");
+    const query = getValueByHeader(row, headers, "검색어") || name;
+    if (cat && name) {
+      tempContacts.push({
+        category: cat,
+        name: name,
+        tel: tel,
+        er: er,
+        fax: fax,
+        query: query
+      });
+    }
+  });
+  
   if (tempContacts.length > 0) {
     CONTACT_DIRECTORY.length = 0;
     CONTACT_DIRECTORY.push(...tempContacts);
   }
 }
 
+// Parse Patient Types sheet
+function parseCopayRates(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["코드", "구분명", "본인부담률"]);
+  if (headerIdx === -1) return;
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempCopay = {};
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const code = getValueByHeader(row, headers, "코드");
+    const name = getValueByHeader(row, headers, "구분명");
+    const rateStr = getValueByHeader(row, headers, "본인부담률");
+    const type = getValueByHeader(row, headers, "유형");
+    const label = getValueByHeader(row, headers, "상세설명");
+    
+    let rate = parseFloat(rateStr);
+    if (isNaN(rate)) rate = null;
+    
+    if (code && name) {
+      tempCopay[code] = { name, rate, type, label };
+    }
+  });
+  if (Object.keys(tempCopay).length > 0) {
+    for (const k in COPAY_RATES) delete COPAY_RATES[k];
+    Object.assign(COPAY_RATES, tempCopay);
+  }
+}
+
+// Parse Disease Guidelines sheet
+function parseDiseaseGuidelines(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["코드", "질환명", "발병후기한"]);
+  if (headerIdx === -1) return;
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempDisease = {};
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const code = getValueByHeader(row, headers, "코드");
+    const name = getValueByHeader(row, headers, "질환명");
+    const onsetLimit = getNumberValueByHeader(row, headers, "발병후기한");
+    const stayLimit = getNumberValueByHeader(row, headers, "입원한도");
+    const category = getValueByHeader(row, headers, "분류");
+    
+    if (code && name) {
+      tempDisease[code] = { name, onsetLimit, stayLimit, category };
+    }
+  });
+  if (Object.keys(tempDisease).length > 0) {
+    for (const k in DISEASE_GUIDELINES) delete DISEASE_GUIDELINES[k];
+    Object.assign(DISEASE_GUIDELINES, tempDisease);
+  }
+}
+
+// Parse Ward Room Config sheet
+function parseWardRoomConfig(rows) {
+  const headerIdx = findHeaderRowIndex(rows, ["병동", "입원유형", "인실키"]);
+  if (headerIdx === -1) return;
+  const headers = rows[headerIdx].map(h => h ? h.toString().trim() : '');
+  const dataRows = rows.slice(headerIdx + 1);
+  const tempConfig = {};
+  dataRows.forEach(row => {
+    if (!row || row.length === 0) return;
+    const ward = getValueByHeader(row, headers, "병동");
+    const type = getValueByHeader(row, headers, "입원유형");
+    const roomKey = getValueByHeader(row, headers, "인실키");
+    const displayName = getValueByHeader(row, headers, "출력용이름");
+    const baseRoomKey = getValueByHeader(row, headers, "수가용인실");
+    
+    if (ward && type && roomKey) {
+      if (!tempConfig[ward]) {
+        tempConfig[ward] = { type: type, rooms: {} };
+      }
+      tempConfig[ward].rooms[roomKey] = {
+        name: displayName,
+        baseRoomKey: baseRoomKey
+      };
+    }
+  });
+  if (Object.keys(tempConfig).length > 0) {
+    for (const k in WARD_ROOM_CONFIG) delete WARD_ROOM_CONFIG[k];
+    Object.assign(WARD_ROOM_CONFIG, tempConfig);
+  }
+}
+
 async function loadDataFromGoogleSheets() {
   try {
-    const res = await fetch(`${GOOGLE_SHEET_CSV_URL}&t=${Date.now()}`);
+    const res = await fetch(`${GOOGLE_SHEET_XLSX_URL}&t=${Date.now()}`);
     if (!res.ok) throw new Error('Network response was not ok');
-    const csvText = await res.text();
-    if (!csvText.trim()) {
-      console.log('Google Sheet is empty, using local database fallback.');
-      return;
+    const arrayBuffer = await res.arrayBuffer();
+    
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    
+    // 1. 입원료수가
+    const inpatientSheet = workbook.Sheets['입원료수가'];
+    if (inpatientSheet) {
+      const rows = XLSX.utils.sheet_to_json(inpatientSheet, { header: 1, defval: '' });
+      parseInpatientRates(rows);
     }
-    parseGoogleSheetCSV(csvText);
-    console.log('Google Sheets data loaded and synchronized successfully!');
+    
+    // 2. 재활치료료
+    const rehabSheet = workbook.Sheets['재활치료료'];
+    if (rehabSheet) {
+      const rows = XLSX.utils.sheet_to_json(rehabSheet, { header: 1, defval: '' });
+      parseRehabRates(rows);
+    }
+    
+    // 3. 식사료
+    const mealSheet = workbook.Sheets['식사료'];
+    if (mealSheet) {
+      const rows = XLSX.utils.sheet_to_json(mealSheet, { header: 1, defval: '' });
+      parseMealCost(rows);
+    }
+    
+    // 4. 본인부담상한제
+    const ceilingSheet = workbook.Sheets['본인부담상한제'];
+    if (ceilingSheet) {
+      const rows = XLSX.utils.sheet_to_json(ceilingSheet, { header: 1, defval: '' });
+      parseCeilingThresholds(rows);
+    }
+    
+    // 5. 연락처
+    const contactSheet = workbook.Sheets['연락처'];
+    if (contactSheet) {
+      const rows = XLSX.utils.sheet_to_json(contactSheet, { header: 1, defval: '' });
+      parseContactDirectory(rows);
+    }
+
+    // 6. 환자구분
+    const copaySheet = workbook.Sheets['환자구분'];
+    if (copaySheet) {
+      const rows = XLSX.utils.sheet_to_json(copaySheet, { header: 1, defval: '' });
+      parseCopayRates(rows);
+    }
+
+    // 7. 질환군
+    const diseaseSheet = workbook.Sheets['질환군'];
+    if (diseaseSheet) {
+      const rows = XLSX.utils.sheet_to_json(diseaseSheet, { header: 1, defval: '' });
+      parseDiseaseGuidelines(rows);
+    }
+
+    // 8. 병동설정
+    const wardSheet = workbook.Sheets['병동설정'];
+    if (wardSheet) {
+      const rows = XLSX.utils.sheet_to_json(wardSheet, { header: 1, defval: '' });
+      parseWardRoomConfig(rows);
+    }
+    
+    console.log('Google Sheets Excel database successfully synced!');
   } catch (err) {
-    console.warn('Failed to load Google Sheets data. Falling back to local data.js.', err);
+    console.warn('Failed to load Google Sheets Excel database. Fallback active.', err);
   }
 }
 
