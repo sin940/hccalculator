@@ -133,6 +133,33 @@ nav {
   color: var(--white);
 }
 
+.nav-ambulance-info {
+  color: var(--slate-300);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-ambulance-info a {
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px dashed var(--slate-300);
+  transition: var(--transition);
+}
+.nav-ambulance-info a:hover {
+  color: var(--success);
+  border-bottom-color: var(--success);
+}
+
+@media (max-width: 992px) {
+  .nav-ambulance-info {
+    display: none !important;
+  }
+}
+
 /* Hero Section */
 .hero {
   background: radial-gradient(circle at 10% 20%, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 90%), 
