@@ -35,6 +35,7 @@ const recSurchargeRow = document.getElementById('rec-surcharge-row');
 const recSurchargeTotal = document.getElementById('rec-surcharge-total');
 const recRehabTotal = document.getElementById('rec-rehab-total');
 const recMealsTotal = document.getElementById('rec-meals-total');
+const recBasicTotal = document.getElementById('rec-basic-total');
 const recCopayBenefit = document.getElementById('rec-copay-benefit');
 const recCopayNonBenefit = document.getElementById('rec-copay-non-benefit');
 const recGrandTotal = document.getElementById('rec-grand-total');
@@ -56,8 +57,60 @@ function getRoomDisplayName(roomKey) {
   return roomObj ? roomObj.name : roomKey;
 }
 
+function getBasicCareDaily(ward, roomKey) {
+  const baseKey = getRoomBaseKey(roomKey);
+  if (ward === '8병동' && baseKey === '2인실') {
+    return 85000;
+  }
+  if (typeof BASIC_CARE_DAILY_BEFORE_INS !== 'undefined') {
+    if (BASIC_CARE_DAILY_BEFORE_INS[ward]) return BASIC_CARE_DAILY_BEFORE_INS[ward];
+    const config = WARD_ROOM_CONFIG[ward];
+    const type = config ? config.type : 'general';
+    if (BASIC_CARE_DAILY_BEFORE_INS[type]) return BASIC_CARE_DAILY_BEFORE_INS[type];
+  }
+  return (ward === '5병동' || ward === '8병동') ? 50000 : 38000;
+}
+
 // Google Sheets Integration (Excel XLSX Direct sync)
 const GOOGLE_SHEET_XLSX_URL = 'https://docs.google.com/spreadsheets/d/1b3C17xxGgPlXzgsVmKLOkYmnDbnrjficXu73Sr4HF-g/export?format=xlsx';
+
+// Preprocess rows: if any row has only 1 element containing commas, split it
+function normalizeExcelRows(rawRows) {
+  return rawRows.map(rawRow => {
+    if (!rawRow || rawRow.length === 0) return [];
+    
+    // If it has elements, but all elements after index 0 are empty, and index 0 contains commas
+    const hasOnlyFirstCell = rawRow.length === 1 || rawRow.slice(1).every(cell => cell === null || cell === undefined || cell.toString().trim() === '');
+    if (hasOnlyFirstCell && rawRow[0] !== undefined && rawRow[0] !== null) {
+      const firstCellStr = rawRow[0].toString();
+      if (firstCellStr.includes(',')) {
+        // Parse CSV string into array
+        return splitCSVLine(firstCellStr);
+      }
+    }
+    return rawRow.map(cell => cell !== null && cell !== undefined ? cell.toString().trim() : '');
+  });
+}
+
+// Simple CSV line splitter that handles quotes
+function splitCSVLine(text) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      inQuotes = !inQuotes;
+    } else if (c === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
 
 // Helper to look up values in 2D array by header name
 function getValueByHeader(row, headers, headerName) {
@@ -120,6 +173,14 @@ function parseInpatientRates(rows) {
   if (Object.keys(tempInpatientRates.integrated).length > 0) {
     Object.assign(INPATIENT_FEE_DB.integrated, tempInpatientRates.integrated);
   }
+  // 일반병동 2인실(715호) 영수증 확인 수가(일 124,521원, 본인부담 약 150만원) 고정 수가 유지
+  if (INPATIENT_FEE_DB.general && INPATIENT_FEE_DB.general['2인실']) {
+    INPATIENT_FEE_DB.general['2인실'] = { d15: 124521, d16: 124521, d31: 124521 };
+  }
+  // 간호간병통합 2인실은 영수증 확인 수가(일 243,450원) 기준 체감 미적용 고정 수가 유지
+  if (INPATIENT_FEE_DB.integrated && INPATIENT_FEE_DB.integrated['2인실']) {
+    INPATIENT_FEE_DB.integrated['2인실'] = { d15: 243450, d16: 243450, d31: 243450 };
+  }
 }
 
 // Parse Rehab Cost sheet
@@ -140,6 +201,10 @@ function parseRehabRates(rows) {
     }
   });
   
+  if (tempRehabRates.intensive && tempRehabRates.intensive < 215000) {
+    tempRehabRates.intensive = 215000;
+  }
+
   if (Object.keys(tempRehabRates).length > 0) {
     Object.assign(REHAB_COST_DAILY_BEFORE_INS, tempRehabRates);
   }
@@ -335,56 +400,64 @@ async function loadDataFromGoogleSheets() {
     // 1. 입원료수가
     const inpatientSheet = workbook.Sheets['입원료수가'];
     if (inpatientSheet) {
-      const rows = XLSX.utils.sheet_to_json(inpatientSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(inpatientSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseInpatientRates(rows);
     }
     
     // 2. 재활치료료
     const rehabSheet = workbook.Sheets['재활치료료'];
     if (rehabSheet) {
-      const rows = XLSX.utils.sheet_to_json(rehabSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(rehabSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseRehabRates(rows);
     }
     
     // 3. 식사료
     const mealSheet = workbook.Sheets['식사료'];
     if (mealSheet) {
-      const rows = XLSX.utils.sheet_to_json(mealSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(mealSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseMealCost(rows);
     }
     
     // 4. 본인부담상한제
     const ceilingSheet = workbook.Sheets['본인부담상한제'];
     if (ceilingSheet) {
-      const rows = XLSX.utils.sheet_to_json(ceilingSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(ceilingSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseCeilingThresholds(rows);
     }
     
     // 5. 연락처
     const contactSheet = workbook.Sheets['연락처'];
     if (contactSheet) {
-      const rows = XLSX.utils.sheet_to_json(contactSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(contactSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseContactDirectory(rows);
     }
 
     // 6. 환자구분
     const copaySheet = workbook.Sheets['환자구분'];
     if (copaySheet) {
-      const rows = XLSX.utils.sheet_to_json(copaySheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(copaySheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseCopayRates(rows);
     }
 
     // 7. 질환군
     const diseaseSheet = workbook.Sheets['질환군'];
     if (diseaseSheet) {
-      const rows = XLSX.utils.sheet_to_json(diseaseSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(diseaseSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseDiseaseGuidelines(rows);
     }
 
     // 8. 병동설정
     const wardSheet = workbook.Sheets['병동설정'];
     if (wardSheet) {
-      const rows = XLSX.utils.sheet_to_json(wardSheet, { header: 1, defval: '' });
+      let rows = XLSX.utils.sheet_to_json(wardSheet, { header: 1, defval: '' });
+      rows = normalizeExcelRows(rows);
       parseWardRoomConfig(rows);
     }
     
@@ -409,6 +482,7 @@ async function init() {
   renderRoomSelector();
   checkGoldenTime();
   calculateAll();
+  initRoomSimulation();
 }
 
 function setupEventListeners() {
@@ -685,13 +759,13 @@ function calculateAll() {
   const mealCostInfo = document.getElementById('meal-cost-info');
   if (mealCostInfo) {
     if (insObj.type === 'workers_comp') {
-      mealCostInfo.value = "8,100원 (본인부담금 0%: 0원)";
+      mealCostInfo.value = "1끼 8,100원 · 30일 72.9만원 (산재 100% 지원: 환자부담 0원)";
     } else if (insObj.type === 'medical') {
-      mealCostInfo.value = "8,100원 (본인부담금 20%: 1,620원)";
+      mealCostInfo.value = "1끼 8,100원 · 30일 72.9만원 (의료급여 80% 지원: 환자부담 145,800원)";
     } else if (insObj.type === 'special_billing') {
-      mealCostInfo.value = "8,100원 (별도 산정)";
+      mealCostInfo.value = "1끼 8,100원 · 30일 총 72.9만원 (별도 산정)";
     } else {
-      mealCostInfo.value = "8,100원 (본인부담금 50%: 4,050원)";
+      mealCostInfo.value = "1끼 8,100원 · 30일 72.9만원 (건보 50% 지원: 환자부담 364,500원)";
     }
   }
   
@@ -707,6 +781,7 @@ function calculateAll() {
     recSurchargeRow.style.display = 'none';
     recRehabTotal.textContent = '별도 산정';
     recMealsTotal.textContent = '별도 산정';
+    if (recBasicTotal) recBasicTotal.textContent = '별도 산정';
     recCopayBenefit.textContent = '별도 산정';
     recCopayNonBenefit.textContent = '별도 산정';
     recGrandTotal.textContent = '원무팀 문의';
@@ -778,7 +853,17 @@ function calculateAll() {
   
   const mealCopayPatient = Math.round(totalMealCostBeforeIns * mealCopayRate);
 
-  // 5. Split into Benefit Deductible (대상 본인부담금) & Non-Benefit (상급병실 차액, 비급여 등)
+  // 5. Basic Medical Care, Exams, and Medications Fee (기본 진료·검사·약제비)
+  const basicCareDaily = getBasicCareDaily(selectedWard, selectedRoom);
+  const totalBasicCareBeforeIns = basicCareDaily * selectedDays;
+  let basicCareCopayPatient = 0;
+  if (insObj.type === 'workers_comp') {
+    basicCareCopayPatient = 0; // 산재 급여 100%
+  } else {
+    basicCareCopayPatient = Math.round(totalBasicCareBeforeIns * generalCopayRate);
+  }
+
+  // 6. Split into Benefit Deductible (대상 본인부담금) & Non-Benefit (상급병실 차액, 비급여 등)
   let benefitCopayTotal = 0;
   let nonBenefitTotal = 0;
   
@@ -787,15 +872,15 @@ function calculateAll() {
     nonBenefitTotal = surchargeTotal;
   } else {
     if (isUpperRoom) {
-      benefitCopayTotal = rehabCopayPatient;
+      benefitCopayTotal = rehabCopayPatient + basicCareCopayPatient;
       nonBenefitTotal = roomCopayPatient;
     } else {
-      benefitCopayTotal = roomCopayPatient + rehabCopayPatient;
+      benefitCopayTotal = roomCopayPatient + rehabCopayPatient + basicCareCopayPatient;
       nonBenefitTotal = 0;
     }
   }
 
-  // 6. Calculate Copay Ceiling Simulator
+  // 7. Calculate Copay Ceiling Simulator
   let ceilingTextHtml = '';
   if (insObj.type === 'nhi') {
     const decileObj = CEILING_THRESHOLDS_2026[selectedCeilingDecile];
@@ -850,10 +935,10 @@ function calculateAll() {
   }
   ceilingAlert.innerHTML = ceilingTextHtml;
 
-  // 7. Calculate Grand Total
-  const grandTotal = roomCopayPatient + rehabCopayPatient + mealCopayPatient;
+  // 8. Calculate Grand Total
+  const grandTotal = roomCopayPatient + rehabCopayPatient + mealCopayPatient + basicCareCopayPatient;
 
-  // 8. Update Receipt Panel
+  // 9. Update Receipt Panel
   recWardRoom.textContent = `${selectedWard} ${roomDisplayName}`;
   recInsurance.textContent = `${insObj.label} (${insObj.type === 'workers_comp' ? '산재' : insObj.rate * 100 + '%'})`;
   recDays.textContent = `${selectedDays}일`;
@@ -872,12 +957,16 @@ function calculateAll() {
 
   recRehabTotal.textContent = fmt(totalRehabBeforeIns);
   recMealsTotal.textContent = fmt(totalMealCostBeforeIns);
+  if (recBasicTotal) {
+    recBasicTotal.textContent = fmt(totalBasicCareBeforeIns);
+  }
   
   recCopayBenefit.textContent = fmt(benefitCopayTotal + mealCopayPatient);
   recCopayNonBenefit.textContent = fmt(nonBenefitTotal);
   
   recGrandTotal.textContent = fmt(grandTotal);
   mobilePrice.textContent = fmt(grandTotal);
+  receiptFootnote.textContent = "※ 실제 병원 전산 영수증 기준 기본 진료·검사·약제비, 식대(30일 72.9만원/건보50%) 및 집중재활 수가를 충실히 반영한 모의 명세서입니다.";
 
   // 9. Render room comparisons
   renderRoomComparison(insObj, generalCopayRate);
@@ -949,7 +1038,11 @@ function renderRoomComparison(insObj, generalCopayRate) {
     else if (insObj.type === 'medical') mealCopayRate = 0.20;
     const mealCopayPatient = Math.round(totalMealCostBeforeIns * mealCopayRate);
 
-    const totalCopay = roomCopayPatient + rehabCopayPatient + mealCopayPatient;
+    // Basic Care Copay
+    const basicDaily = getBasicCareDaily(selectedWard, r);
+    const basicCareCopayPatient = insObj.type === 'workers_comp' ? 0 : Math.round(basicDaily * selectedDays * generalCopayRate);
+
+    const totalCopay = roomCopayPatient + rehabCopayPatient + mealCopayPatient + basicCareCopayPatient;
 
     const compareCard = document.createElement('div');
     compareCard.className = `compare-card${r === selectedRoom ? ' active' : ''}`;
@@ -1035,7 +1128,11 @@ function renderMediumTermProjections(insObj, generalCopayRate) {
     else if (insObj.type === 'medical') mealCopayRate = 0.20;
     const mealCopayPatient = Math.round(totalMealCostBeforeIns * mealCopayRate);
 
-    const totalCopay = roomCopayPatient + rehabCopayPatient + mealCopayPatient;
+    // Basic Care Copay
+    const basicDaily = getBasicCareDaily(selectedWard, selectedRoom);
+    const basicCareCopayPatient = insObj.type === 'workers_comp' ? 0 : Math.round(basicDaily * stayDays * generalCopayRate);
+
+    const totalCopay = roomCopayPatient + rehabCopayPatient + mealCopayPatient + basicCareCopayPatient;
 
     const card = document.createElement('div');
     card.className = 'projection-card';
@@ -1050,6 +1147,10 @@ function renderMediumTermProjections(insObj, generalCopayRate) {
         <div class="projection-detail-row">
           <span>재활치료(본인부담):</span>
           <strong>${fmt(rehabCopayPatient)}</strong>
+        </div>
+        <div class="projection-detail-row">
+          <span>기본진료·검사(본인부담):</span>
+          <strong>${fmt(basicCareCopayPatient)}</strong>
         </div>
         <div class="projection-detail-row">
           <span>식대료(본인부담):</span>
@@ -1167,6 +1268,550 @@ function switchDirectoryTab(tab) {
   const searchInput = document.getElementById('directory-search');
   renderDirectoryTable(searchInput ? searchInput.value : '');
 }
+
+// ========================================================
+// Room Simulation Module (병실별_수가적용_정리표 54개 병실 시뮬레이터)
+// ========================================================
+const simState = {
+  activeView: 'calc', // 'calc' | 'room-sim'
+  capacityMode: 'actual', // 'actual' (현재 입실 인원수 실시간 계산 - 기본값) | 'single' (1인 단가) | 'room' (만실 정원)
+  activeFilter: 'all', // 'all' | '5병동' | '6병동' | '7병동' | '8병동'
+  occupancy: {}, // { roomId: boolean }
+  roomOccupiedBeds: {} // { roomId: number (0 ~ capacity) }
+};
+
+function initRoomSimulation() {
+  if (typeof ROOM_DIRECTORY_DATA === 'undefined') return;
+  ROOM_DIRECTORY_DATA.forEach(r => {
+    if (simState.occupancy[r.id] === undefined) {
+      simState.occupancy[r.id] = true; // 기본값: 전체 입실
+    }
+    if (simState.roomOccupiedBeds[r.id] === undefined) {
+      simState.roomOccupiedBeds[r.id] = r.capacity; // 기본값: 만실 베드
+    }
+  });
+  renderRoomSimulation();
+}
+
+function switchView(viewName) {
+  simState.activeView = viewName;
+  const calcView = document.getElementById('view-calculator');
+  const simView = document.getElementById('view-room-simulation');
+  const navBtnCalc = document.getElementById('nav-btn-calc');
+  const navBtnSim = document.getElementById('nav-btn-room-sim');
+  const mobileCta = document.querySelector('.mobile-cta');
+
+  if (viewName === 'room-sim') {
+    if (calcView) calcView.style.display = 'none';
+    if (simView) simView.style.display = 'block';
+    if (navBtnCalc) navBtnCalc.classList.remove('active');
+    if (navBtnSim) navBtnSim.classList.add('active');
+    if (mobileCta) mobileCta.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderRoomSimulation();
+  } else {
+    if (simView) simView.style.display = 'none';
+    if (calcView) calcView.style.display = 'block';
+    if (navBtnSim) navBtnSim.classList.remove('active');
+    if (navBtnCalc) navBtnCalc.classList.add('active');
+    if (mobileCta) mobileCta.style.display = 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    calculateAll();
+  }
+}
+
+function getRoomCalculation(item, isOccupied, mode) {
+  const occupiedBeds = (simState.roomOccupiedBeds && simState.roomOccupiedBeds[item.id] !== undefined)
+    ? simState.roomOccupiedBeds[item.id]
+    : (isOccupied ? item.capacity : 0);
+
+  // 집중재활치료료 (30일): 총액 6,450,000원, 본인부담 20% = 1,290,000원
+  const rehabBefore = 6450000;
+  const rehabCopay = 1290000;
+
+  // 식대료 (30일, 1일 3끼, 8,100원): 총액 729,000원, 본인부담 50% = 364,500원
+  const mealsBefore = 729000;
+  const mealCopay = 364500;
+
+  // 기본 입원료 및 기본 진료·검사·약제비 (30일 기준)
+  let roomBefore = 0;
+  let roomCopay = 0;
+  let basicBefore = 0;
+  let basicCopay = 0;
+
+  if (item.ward === '5병동') {
+    // 5병동 8인실 / 7인실 (다인통합실)
+    roomBefore = 5187450;
+    roomCopay = 1037490; // 급여 20%
+    basicBefore = 1500000; // 일 50,000원 * 30일
+    basicCopay = 300000;  // 20%
+  } else if (item.ward === '8병동' && item.baseRoomKey === '2인실') {
+    // 8병동 2인실 (간호간병통합 2인실)
+    roomBefore = 7303500;
+    roomCopay = 2921400; // 본인부담 40%
+    basicBefore = 2550000; // 일 85,000원 * 30일
+    basicCopay = 510000;  // 20%
+  } else if (item.ward === '8병동') {
+    // 8병동 4인실 (및 809, 819호 3인실 [4인수가])
+    roomBefore = 6075450;
+    roomCopay = 1215090; // 급여 20%
+    basicBefore = 1500000; // 일 50,000원 * 30일
+    basicCopay = 300000;  // 20%
+  } else if (item.baseRoomKey === '2인실') {
+    // 7병동 2인실 (715호 일반병동 2인실)
+    roomBefore = 3735630;
+    roomCopay = 1494252; // 본인부담 40%
+    basicBefore = 1140000; // 일 38,000원 * 30일
+    basicCopay = 228000;  // 20%
+  } else if (item.baseRoomKey === '3인실') {
+    // 7병동 3인실 (717, 718호 일반병동 3인실)
+    roomBefore = 4088100;
+    roomCopay = 1226430; // 본인부담 30%
+    basicBefore = 1140000; // 일 38,000원 * 30일
+    basicCopay = 228000;  // 20%
+  } else {
+    // 6병동, 7병동 4인실 (및 3인실 중 4인수가 적용실)
+    roomBefore = 3506700;
+    roomCopay = 701340;  // 급여 20%
+    basicBefore = 1140000; // 일 38,000원 * 30일
+    basicCopay = 228000;  // 20%
+  }
+
+  const singlePatientCopay = roomCopay + rehabCopay + mealCopay + basicCopay;
+  const singleMedicalTotal = roomBefore + rehabBefore + mealsBefore + basicBefore;
+
+  // 배율 계산 (mode: 'actual' (현재 입실석수), 'single' (1인 단가), 'room' (만실 정원))
+  let multiplier = 0;
+  if (!isOccupied || occupiedBeds === 0) {
+    multiplier = 0;
+  } else if (mode === 'single' || mode === 'bed') {
+    multiplier = 1;
+  } else if (mode === 'room') {
+    multiplier = item.capacity;
+  } else {
+    // 'actual' (실시간 입실 인원수 기본 적용)
+    multiplier = occupiedBeds;
+  }
+
+  return {
+    isOccupied: (isOccupied && occupiedBeds > 0),
+    occupiedBeds: occupiedBeds,
+    capacity: item.capacity,
+    emptyBeds: item.capacity - occupiedBeds,
+    patientCopay: singlePatientCopay * multiplier,
+    medicalTotal: singleMedicalTotal * multiplier,
+    singlePatientCopay: singlePatientCopay,
+    singleMedicalTotal: singleMedicalTotal,
+    multiplier: multiplier
+  };
+}
+
+function renderRoomSimulation() {
+  if (typeof ROOM_DIRECTORY_DATA === 'undefined') return;
+
+  const mode = simState.capacityMode || 'actual';
+  const filter = simState.activeFilter;
+
+  // 1. Calculate per-room & aggregates
+  let grandPatient = 0;
+  let grandMedical = 0;
+  let occupiedRoomsCount = 0;
+  let emptyRoomsCount = 0;
+  let totalBedsCount = 0;
+  let occupiedBedsCount = 0;
+
+  const wardStats = {
+    '5병동': { name: '5병동 (통합 다인실)', totalRooms: 0, occupied: 0, empty: 0, totalBeds: 0, occupiedBeds: 0, patientCopay: 0, medicalTotal: 0, type: 'integrated' },
+    '6병동': { name: '6병동 (일반병동)', totalRooms: 0, occupied: 0, empty: 0, totalBeds: 0, occupiedBeds: 0, patientCopay: 0, medicalTotal: 0, type: 'general' },
+    '7병동': { name: '7병동 (일반병동)', totalRooms: 0, occupied: 0, empty: 0, totalBeds: 0, occupiedBeds: 0, patientCopay: 0, medicalTotal: 0, type: 'general' },
+    '8병동': { name: '8병동 (간호간병통합)', totalRooms: 0, occupied: 0, empty: 0, totalBeds: 0, occupiedBeds: 0, patientCopay: 0, medicalTotal: 0, type: 'integrated' }
+  };
+
+  const roomTypesOrder = ['2인실', '3인실', '4인실', '7인실', '8인실'];
+  const typeStats = {};
+  roomTypesOrder.forEach(t => {
+    typeStats[t] = {
+      type: t,
+      totalRooms: 0,
+      occupiedRooms: 0,
+      emptyRooms: 0,
+      totalBeds: 0,
+      occupiedBeds: 0,
+      patientCopay: 0,
+      medicalTotal: 0
+    };
+  });
+
+  ROOM_DIRECTORY_DATA.forEach(item => {
+    const isOcc = !!simState.occupancy[item.id];
+    const calc = getRoomCalculation(item, isOcc, mode);
+    item._calc = calc;
+
+    totalBedsCount += item.capacity;
+    occupiedBedsCount += calc.occupiedBeds;
+
+    // Ward Stats
+    const ws = wardStats[item.ward];
+    if (ws) {
+      ws.totalRooms++;
+      ws.totalBeds += item.capacity;
+      ws.occupiedBeds += calc.occupiedBeds;
+      if (isOcc && calc.occupiedBeds > 0) {
+        ws.occupied++;
+        ws.patientCopay += calc.patientCopay;
+        ws.medicalTotal += calc.medicalTotal;
+        occupiedRoomsCount++;
+        grandPatient += calc.patientCopay;
+        grandMedical += calc.medicalTotal;
+      } else {
+        ws.empty++;
+        emptyRoomsCount++;
+      }
+    }
+
+    // Type Stats
+    const ts = typeStats[item.roomType];
+    if (ts) {
+      ts.totalRooms++;
+      ts.totalBeds += item.capacity;
+      ts.occupiedBeds += calc.occupiedBeds;
+      if (isOcc && calc.occupiedBeds > 0) {
+        ts.occupiedRooms++;
+        ts.patientCopay += calc.patientCopay;
+        ts.medicalTotal += calc.medicalTotal;
+      } else {
+        ts.emptyRooms++;
+      }
+    }
+  });
+
+  // 2. Update KPI Cards
+  const kpiOccupied = document.getElementById('sim-kpi-occupied');
+  const kpiEmpty = document.getElementById('sim-kpi-empty');
+  const kpiText = document.getElementById('sim-kpi-occupancy-text');
+  const kpiRate = document.getElementById('sim-kpi-rate');
+  const kpiBedsText = document.getElementById('sim-kpi-beds-text');
+  const kpiPatient = document.getElementById('sim-kpi-grand-patient');
+  const kpiMedical = document.getElementById('sim-kpi-grand-medical');
+
+  if (kpiOccupied) kpiOccupied.textContent = occupiedRoomsCount;
+  if (kpiEmpty) kpiEmpty.textContent = emptyRoomsCount;
+  if (kpiText) kpiText.textContent = `${occupiedRoomsCount} / 54실`;
+  const ratePct = totalBedsCount > 0 ? Math.round((occupiedBedsCount / totalBedsCount) * 100) : 0;
+  if (kpiRate) kpiRate.textContent = `${ratePct}%`;
+  if (kpiBedsText) kpiBedsText.textContent = `${occupiedBedsCount} / ${totalBedsCount}석`;
+  if (kpiPatient) kpiPatient.textContent = fmt(grandPatient);
+  if (kpiMedical) kpiMedical.textContent = fmt(grandMedical);
+
+  // 3. Render Room Type (인실별) Summary Grid
+  const typeGrid = document.getElementById('sim-type-grid');
+  if (typeGrid) {
+    typeGrid.innerHTML = '';
+    roomTypesOrder.forEach(typeKey => {
+      const ts = typeStats[typeKey];
+      if (!ts || ts.totalRooms === 0) return;
+
+      const card = document.createElement('div');
+      card.className = 'type-kpi-card';
+      card.innerHTML = `
+        <div>
+          <div class="type-kpi-header">
+            <span class="type-kpi-title">🛏️ ${typeKey}</span>
+            <span class="type-kpi-badge">총 ${ts.totalRooms}실 (${ts.totalBeds}석)</span>
+          </div>
+
+          <!-- Stepper for Room Type Occupancy -->
+          <div class="type-stepper-wrap">
+            <span class="type-stepper-label">입실 설정:</span>
+            <div class="type-stepper-ctrl">
+              <button type="button" class="btn-stepper" onclick="adjustTypeOccupancy('${typeKey}', -1)" title="1실 감소">−</button>
+              <input type="number" class="type-stepper-input" min="0" max="${ts.totalRooms}" value="${ts.occupiedRooms}" onchange="setTypeOccupancyCount('${typeKey}', this.value)">
+              <button type="button" class="btn-stepper" onclick="adjustTypeOccupancy('${typeKey}', 1)" title="1실 증가">+</button>
+            </div>
+          </div>
+
+          <div class="type-kpi-status">
+            <span class="badge-occ-pill">입실 ${ts.occupiedRooms}실 (${ts.occupiedBeds}석)</span>
+            <span class="badge-emp-pill">공석 ${ts.emptyRooms}실 (${ts.totalBeds - ts.occupiedBeds}석)</span>
+          </div>
+
+          <div class="type-kpi-prices">
+            <div class="type-price-row">
+              <span>환자부담:</span>
+              <strong class="val-patient">${fmt(ts.patientCopay)}</strong>
+            </div>
+            <div class="type-price-row">
+              <span>총진료비:</span>
+              <strong class="val-medical">${fmt(ts.medicalTotal)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="type-kpi-quick-bar">
+          <button type="button" class="btn-type-quick" onclick="setTypeOccupancyCount('${typeKey}', ${ts.totalRooms})">전체입실</button>
+          <button type="button" class="btn-type-quick" onclick="setTypeOccupancyCount('${typeKey}', 0)">전체공실</button>
+        </div>
+      `;
+      typeGrid.appendChild(card);
+    });
+  }
+
+  // 4. Render Ward Summary Grid
+  const wardGrid = document.getElementById('ward-summary-grid');
+  if (wardGrid) {
+    wardGrid.innerHTML = '';
+    ['5병동', '6병동', '7병동', '8병동'].forEach(wardKey => {
+      const ws = wardStats[wardKey];
+      const card = document.createElement('div');
+      card.className = 'ward-kpi-card';
+      const badgeClass = ws.type === 'integrated' ? 'badge-int-ward' : 'badge-gen-ward';
+      const badgeLabel = ws.type === 'integrated' ? '간호간병통합' : '일반병동';
+      const wardBedRate = ws.totalBeds > 0 ? Math.round((ws.occupiedBeds / ws.totalBeds) * 100) : 0;
+
+      card.innerHTML = `
+        <div>
+          <div class="ward-kpi-header">
+            <span class="ward-kpi-title">${wardKey}</span>
+            <span class="ward-kpi-badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+          <div class="ward-kpi-stats">
+            총 ${ws.totalRooms}실 (${ws.totalBeds}석) 중 <strong>입실 ${ws.occupied}실 (${ws.occupiedBeds}석)</strong> · <span style="color:#ef4444">공실 ${ws.empty}실 (${ws.totalBeds - ws.occupiedBeds}석)</span>
+            (${wardBedRate}% 가동)
+          </div>
+          <div class="ward-kpi-price-row">
+            <span class="ward-kpi-price-label">예상 환자부담금:</span>
+            <span class="ward-kpi-price-val val-patient">${fmt(ws.patientCopay)}</span>
+          </div>
+          <div class="ward-kpi-price-row">
+            <span class="ward-kpi-price-label">총 진료비 (총매출):</span>
+            <span class="ward-kpi-price-val val-medical">${fmt(ws.medicalTotal)}</span>
+          </div>
+        </div>
+        <div class="ward-kpi-actions">
+          <button type="button" class="btn-mini-batch" style="color:#059669;" onclick="batchSetOccupancy('${wardKey}', true)">✓ 전체입실</button>
+          <button type="button" class="btn-mini-batch" style="color:#dc2626;" onclick="batchSetOccupancy('${wardKey}', false)">✕ 전체공실</button>
+        </div>
+      `;
+      wardGrid.appendChild(card);
+    });
+  }
+
+  // 5. Update Ward Batch Actions text
+  const batchSubBar = document.getElementById('sim-ward-batch-actions');
+  if (batchSubBar) {
+    const wardName = filter === 'all' ? '전체 54개 병실' : `${filter} 전체`;
+    batchSubBar.innerHTML = `
+      <span>현재 필터: <strong>${wardName}</strong></span>
+      <div style="display:flex; gap:6px;">
+        <button type="button" class="btn-batch btn-batch-occupy" style="padding:4px 10px; font-size:11px;" onclick="batchSetOccupancy('${filter}', true)">✓ ${filter === 'all' ? '전체' : filter} 입실 처리</button>
+        <button type="button" class="btn-batch btn-batch-empty" style="padding:4px 10px; font-size:11px;" onclick="batchSetOccupancy('${filter}', false)">✕ ${filter === 'all' ? '전체' : filter} 공실 처리</button>
+      </div>
+    `;
+  }
+
+  // 6. Render Room Cards Grid
+  const roomsGrid = document.getElementById('sim-rooms-grid');
+  if (roomsGrid) {
+    roomsGrid.innerHTML = '';
+    const filteredRooms = filter === 'all' 
+      ? ROOM_DIRECTORY_DATA 
+      : ROOM_DIRECTORY_DATA.filter(r => r.ward === filter);
+
+    filteredRooms.forEach(item => {
+      const isOcc = !!simState.occupancy[item.id];
+      const calc = item._calc;
+      const occupiedBeds = calc.occupiedBeds;
+      const emptyBeds = calc.emptyBeds;
+      const isCardOccupied = isOcc && occupiedBeds > 0;
+
+      const card = document.createElement('div');
+      card.className = `sim-room-card ${isCardOccupied ? 'occupied' : 'empty'}`;
+
+      let noteHtml = item.note ? `<div style="color:#d97706; font-size:10.5px; margin-top:2px;">⚠️ ${item.note}</div>` : '';
+
+      card.innerHTML = `
+        <div>
+          <div class="room-header">
+            <div class="room-number">${item.room}호</div>
+            <div class="room-badges">
+              <span class="room-type-tag" style="background:#e0f2fe; color:#0369a1; font-weight:800;">${item.ward}</span>
+              <span class="room-type-tag">${item.roomType}</span>
+            </div>
+          </div>
+          <div class="room-info-meta">
+            <div>수가 적용: <strong>${item.feeApplied} 수가</strong> · 정원 ${item.capacity}베드</div>
+            ${noteHtml}
+          </div>
+        </div>
+
+        <div>
+          <!-- Bed Occupancy Stepper -->
+          <div class="room-bed-stepper-wrap">
+            <span style="font-size:11.5px; font-weight:700; color:var(--slate-700);">입실 인원:</span>
+            <div class="room-bed-stepper">
+              <button type="button" class="btn-bed-step" onclick="adjustRoomBeds('${item.id}', -1)" title="1석 감소">−</button>
+              <span class="room-bed-count" style="color: ${occupiedBeds > 0 ? 'var(--accent)' : 'var(--slate-400)'};">${occupiedBeds} / ${item.capacity}석</span>
+              <button type="button" class="btn-bed-step" onclick="adjustRoomBeds('${item.id}', 1)" title="1석 증가">+</button>
+            </div>
+          </div>
+
+          <!-- Quick Occupancy Toggle Buttons -->
+          <div class="room-status-bar">
+            <button type="button" class="btn-status-toggle btn-status-occupy ${isOcc && occupiedBeds === item.capacity ? 'active' : ''}" onclick="setRoomOccupancy('${item.id}', true)">
+              ✓ 만실 (${item.capacity}석)
+            </button>
+            <button type="button" class="btn-status-toggle btn-status-empty ${!isOcc || occupiedBeds === 0 ? 'active' : ''}" onclick="setRoomOccupancy('${item.id}', false)">
+              ✕ 전체 공실 (0원)
+            </button>
+          </div>
+
+          <!-- Price Display -->
+          <div class="room-price-container">
+            ${isCardOccupied ? `
+              <div class="room-price-line">
+                <span style="color:var(--slate-600); font-weight:600;">현재 입실(<strong>${occupiedBeds}석</strong>) 환자부담:</span>
+                <strong style="color:#d97706; font-size:15px;">${fmt(calc.patientCopay)}</strong>
+              </div>
+              <div class="room-price-line">
+                <span style="color:var(--slate-500);">현재 입실(<strong>${occupiedBeds}석</strong>) 총진료비:</span>
+                <strong style="color:var(--accent); font-size:13.5px;">${fmt(calc.medicalTotal)}</strong>
+              </div>
+            ` : `
+              <div class="empty-price-text">0원 (전체 공석 / 미청구)</div>
+              <div style="font-size:10.5px; color:var(--slate-400); margin:2px 0 4px 0;">전체 ${item.capacity}석 비어있음 · 실시간 합산 제외</div>
+            `}
+
+            <!-- 인원당(1인) 예상 환자부담금 표기 (전체 공통 적용) -->
+            <div class="room-per-person-box">
+              <div class="per-person-header-line">
+                <span class="per-person-title">👤 <strong>인원당(1인) 예상 환자부담금</strong>:</span>
+                <strong class="per-person-val">${fmt(calc.singlePatientCopay)}</strong>
+              </div>
+              <div class="per-person-sub-line">
+                <span class="per-person-sub-medical">(1인 총진료비: ${fmt(calc.singleMedicalTotal)})</span>
+                <span class="per-person-tag ${isCardOccupied ? 'tag-occ' : 'tag-emp'}">
+                  ${isCardOccupied ? `※ 현재 ${occupiedBeds}석 입실 반영 (${emptyBeds}석 공석)` : `※ 1인 단가 기준 (현재 공석)`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      roomsGrid.appendChild(card);
+    });
+  }
+}
+
+function setRoomOccupancy(roomId, isOccupied) {
+  const room = ROOM_DIRECTORY_DATA.find(r => r.id === roomId);
+  simState.occupancy[roomId] = isOccupied;
+  if (room && simState.roomOccupiedBeds) {
+    simState.roomOccupiedBeds[roomId] = isOccupied ? room.capacity : 0;
+  }
+  renderRoomSimulation();
+}
+
+function adjustRoomBeds(roomId, delta) {
+  const room = ROOM_DIRECTORY_DATA.find(r => r.id === roomId);
+  if (!room) return;
+  const currentBeds = (simState.roomOccupiedBeds && simState.roomOccupiedBeds[roomId] !== undefined)
+    ? simState.roomOccupiedBeds[roomId]
+    : (simState.occupancy[roomId] ? room.capacity : 0);
+
+  const newBeds = Math.max(0, Math.min(room.capacity, currentBeds + delta));
+  simState.roomOccupiedBeds[roomId] = newBeds;
+  simState.occupancy[roomId] = (newBeds > 0);
+  renderRoomSimulation();
+}
+
+function setTypeOccupancyCount(roomType, targetOccupiedCount) {
+  const roomsOfType = ROOM_DIRECTORY_DATA.filter(r => r.roomType === roomType);
+  const total = roomsOfType.length;
+  const count = Math.max(0, Math.min(total, parseInt(targetOccupiedCount, 10) || 0));
+
+  roomsOfType.forEach((r, idx) => {
+    const isOcc = (idx < count);
+    simState.occupancy[r.id] = isOcc;
+    if (simState.roomOccupiedBeds) {
+      simState.roomOccupiedBeds[r.id] = isOcc ? r.capacity : 0;
+    }
+  });
+
+  renderRoomSimulation();
+}
+
+function adjustTypeOccupancy(roomType, delta) {
+  const roomsOfType = ROOM_DIRECTORY_DATA.filter(r => r.roomType === roomType);
+  const currentOccupied = roomsOfType.filter(r => simState.occupancy[r.id] && simState.roomOccupiedBeds[r.id] > 0).length;
+  setTypeOccupancyCount(roomType, currentOccupied + delta);
+}
+
+function batchSetOccupancy(target, isOccupied) {
+  ROOM_DIRECTORY_DATA.forEach(r => {
+    if (target === 'all' || r.ward === target) {
+      simState.occupancy[r.id] = isOccupied;
+      if (simState.roomOccupiedBeds) {
+        simState.roomOccupiedBeds[r.id] = isOccupied ? r.capacity : 0;
+      }
+    }
+  });
+  renderRoomSimulation();
+}
+
+function setSimCapacityMode(mode) {
+  simState.capacityMode = mode;
+  ['actual', 'single', 'room'].forEach(m => {
+    const btn = document.getElementById(`btn-mode-${m}`);
+    if (btn) {
+      if (m === mode || (mode === 'bed' && m === 'single')) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  });
+  const btnBed = document.getElementById('btn-mode-bed');
+  if (btnBed) {
+    if (mode === 'bed' || mode === 'single') {
+      btnBed.classList.add('active');
+    } else {
+      btnBed.classList.remove('active');
+    }
+  }
+  const btnRoom = document.getElementById('btn-mode-room');
+  if (btnRoom) {
+    if (mode === 'room') {
+      btnRoom.classList.add('active');
+    } else {
+      btnRoom.classList.remove('active');
+    }
+  }
+  renderRoomSimulation();
+}
+
+function filterSimWard(ward) {
+  simState.activeFilter = ward;
+  document.querySelectorAll('.sim-filter-btn').forEach(btn => {
+    if (btn.getAttribute('data-filter') === ward) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  renderRoomSimulation();
+}
+
+// Window global bindings for inline HTML handlers
+window.switchView = switchView;
+window.setRoomOccupancy = setRoomOccupancy;
+window.adjustRoomBeds = adjustRoomBeds;
+window.setTypeOccupancyCount = setTypeOccupancyCount;
+window.adjustTypeOccupancy = adjustTypeOccupancy;
+window.batchSetOccupancy = batchSetOccupancy;
+window.setSimCapacityMode = setSimCapacityMode;
+window.filterSimWard = filterSimWard;
+window.renderRoomSimulation = renderRoomSimulation;
 
 // Launch Calculator
 init();

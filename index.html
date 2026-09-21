@@ -25,7 +25,8 @@
         <strong>해운대나눔과행복병원</strong>
       </a>
       <div class="nav-links">
-        <button class="nav-link" onclick="window.scrollTo({top: document.getElementById('calc-section').offsetTop - 90, behavior: 'smooth'})">입원비 계산기</button>
+        <button class="nav-link active" id="nav-btn-calc" onclick="switchView('calc')">입원비 계산기</button>
+        <button class="nav-link" id="nav-btn-room-sim" onclick="switchView('room-sim')" style="color: #2563eb; font-weight: 700; background: rgba(37, 99, 235, 0.08);">🏥 병실별 예상금액</button>
         <button class="nav-link" onclick="openAmbulanceModal()" style="color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.08);">🚑 사설구급차 연락처</button>
         <button class="nav-link" onclick="openDirectoryModal()" style="color: #0d9488; font-weight: 700; background: rgba(13, 148, 136, 0.08);">📋 주요 연락처 및 FAX</button>
         <button class="nav-link" onclick="window.scrollTo({top: document.getElementById('tips').offsetTop - 90, behavior: 'smooth'})">알아두기 (고시 정보)</button>
@@ -34,8 +35,10 @@
     </div>
   </nav>
 
-  <!-- Hero Header -->
-  <div class="hero">
+  <!-- View 1: 입원비 계산기 -->
+  <div id="view-calculator">
+    <!-- Hero Header -->
+    <div class="hero">
     <div class="hero-badge">
       <span style="color:#60a5fa">●</span> 2026년 보건복지부 · 심평원 최신 수가 반영 (간호 1등급 · 감염예방 1등급 기준)
     </div>
@@ -172,12 +175,12 @@
               <div class="btn-opt active" data-rehab="intensive">
                 <span class="btn-opt-title">집중 재활치료</span>
                 <span class="btn-opt-desc">하루 2~3시간 집중재활</span>
-                <span class="btn-opt-badge badge-teal">월 약 550만원 상당</span>
+                <span class="btn-opt-badge badge-teal">월 약 650만원 상당</span>
               </div>
               <div class="btn-opt" data-rehab="standard">
                 <span class="btn-opt-title">일반 재활치료</span>
                 <span class="btn-opt-desc">단독 물리/작업치료</span>
-                <span class="btn-opt-badge badge-teal">월 약 280만원 상당</span>
+                <span class="btn-opt-badge badge-teal">월 약 330만원 상당</span>
               </div>
               <div class="btn-opt" data-rehab="none">
                 <span class="btn-opt-title">치료 제외</span>
@@ -225,8 +228,8 @@
               </select>
             </div>
             <div class="form-group">
-              <span class="label-meta">끼니당 식사료 기준</span>
-              <input type="text" class="input-field" id="meal-cost-info" value="8,100원 (본인부담금 50%: 4,050원)" disabled style="background-color: var(--slate-100);">
+              <span class="label-meta">식사료 기준 (30일 기준 총 729,000원)</span>
+              <input type="text" class="input-field" id="meal-cost-info" value="1끼 8,100원 · 30일 72.9만원 (건보 50% 지원: 환자부담 364,500원)" disabled style="background-color: var(--slate-100);">
             </div>
           </div>
         </div>
@@ -303,7 +306,7 @@
               <span class="receipt-val" id="rec-base-room-total">0원</span>
             </div>
             <div class="receipt-row" id="rec-surcharge-row">
-              <span class="receipt-label">2. 상급병실 차액 (본인부담 100%)</span>
+              <span class="receipt-label">2. 상급병실료 / 차액</span>
               <span class="receipt-val val-accent" id="rec-surcharge-total">0원</span>
             </div>
             <div class="receipt-row">
@@ -311,8 +314,12 @@
               <span class="receipt-val" id="rec-rehab-total">0원</span>
             </div>
             <div class="receipt-row">
-              <span class="receipt-label">4. 식사료 총액</span>
+              <span class="receipt-label">4. 식사료 총액 (30일 기준 72.9만)</span>
               <span class="receipt-val" id="rec-meals-total">0원</span>
+            </div>
+            <div class="receipt-row" id="rec-basic-row">
+              <span class="receipt-label">5. 기본 진료·검사·약제비 총액</span>
+              <span class="receipt-val" id="rec-basic-total">0원</span>
             </div>
 
             <div class="receipt-divider"></div>
@@ -334,7 +341,7 @@
                 <div class="receipt-grand-val" id="rec-grand-total">0원</div>
               </div>
               <div id="receipt-footnote" style="font-size:10px; color:var(--slate-600); margin-top:8px; text-align:right; font-weight: 500;">
-                ※ 치료재료대, 약제비 및 비급여 검사/처치 비용은 제외된 모의 계산입니다.
+                ※ 실제 병원 전산 영수증 기준 기본 진료·검사·약제비 및 집중재활 수가를 충실히 반영한 모의 계산입니다.
               </div>
             </div>
 
@@ -415,6 +422,126 @@
     </div>
 
   </div>
+  </div> <!-- End of view-calculator -->
+
+  <!-- View 2: 병실별 예상금액 시뮬레이터 (병실별_수가적용_정리표 기준) -->
+  <div id="view-room-simulation" style="display: none;">
+    <!-- Simulation Hero Header -->
+    <div class="hero">
+      <div class="hero-badge">
+        <span style="color:#10b981">●</span> 병실별 수가적용 정리표 엑셀 실데이터 연동 (54개 전 병실)
+      </div>
+      <h1>병실별 <span>예상금액 시뮬레이터</span></h1>
+      <p>54개 전 병실의 입실/공실 상태를 설정하여 병동별 총진료비(총매출)와 환자 예상부담금을 실시간으로 집계하고 시뮬레이션합니다.</p>
+      
+      <!-- Top KPI Summary Cards -->
+      <div class="hero-stats" style="max-width: 1040px; grid-template-columns: repeat(4, 1fr);">
+        <div class="hero-stat">
+          <span class="hero-stat-num" id="sim-kpi-occupancy-text">54 / 54실</span>
+          <div class="hero-stat-label">병실 가동 (입실 <span id="sim-kpi-occupied" style="color:#60a5fa; font-weight:700;">54</span> · 공실 <span id="sim-kpi-empty" style="color:#f87171; font-weight:700;">0</span>)</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-num" id="sim-kpi-rate" style="color:#34d399;">100%</span>
+          <div class="hero-stat-label">베드 가동률 (<span id="sim-kpi-beds-text" style="color:#34d399; font-weight:700;">227 / 227석</span>)</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-num" id="sim-kpi-grand-patient" style="color:#fbbf24;">0원</span>
+          <div class="hero-stat-label">전체 환자 예상부담금 합계</div>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-num" id="sim-kpi-grand-medical" style="color:#60a5fa;">0원</span>
+          <div class="hero-stat-label">전체 총진료비 (공단+본인)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Simulator Container -->
+    <div class="container" style="padding-top: 24px; padding-bottom: 60px;">
+      <!-- Control Toolbar -->
+      <div class="sim-toolbar-card">
+        <div class="sim-toolbar-left">
+          <span class="sim-toolbar-title">🎛️ 시뮬레이션 설정</span>
+          <div class="sim-mode-toggle">
+            <span style="font-size:12px; font-weight:600; color:var(--slate-600); margin-right:8px;">산정 단위:</span>
+            <button type="button" class="sim-mode-btn active" id="btn-mode-actual" onclick="setSimCapacityMode('actual')">
+              ⚡ 현재 입실석수 실시간 산정 (기본)
+            </button>
+            <button type="button" class="sim-mode-btn" id="btn-mode-single" onclick="setSimCapacityMode('single')">
+              👤 1인(1석) 단가 비교
+            </button>
+            <button type="button" class="sim-mode-btn" id="btn-mode-room" onclick="setSimCapacityMode('room')">
+              🏢 병실 만실(정원) 기준
+            </button>
+          </div>
+        </div>
+        <div class="sim-toolbar-right">
+          <span style="font-size:12px; font-weight:600; color:var(--slate-600);">전체 일괄:</span>
+          <button type="button" class="btn-batch btn-batch-occupy" onclick="batchSetOccupancy('all', true)">
+            ✓ 전체 입실 처리
+          </button>
+          <button type="button" class="btn-batch btn-batch-empty" onclick="batchSetOccupancy('all', false)">
+            ✕ 전체 공실 처리
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: 인실(유형)별 입실 / 공석 일괄 시뮬레이터 -->
+      <div style="margin-top: 24px;">
+        <h3 style="font-size:16px; font-weight:700; color:var(--slate-800); margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+          <span>🏷️ 인실(유형)별 입실 / 공석 일괄 설정 (2인실 · 3인실 · 4인실 · 7인실 · 8인실)</span>
+        </h3>
+        <p style="font-size:12px; color:var(--slate-500); margin-bottom:12px;">
+          각 병실 유형별로 입실할 호실 수와 공석 호실 수를 직접 조절하여 실시간 입실 현황 및 예상금액을 즉시 시뮬레이션할 수 있습니다.
+        </p>
+        <div class="sim-type-grid" id="sim-type-grid">
+          <!-- Populated dynamically via JS: 2인실, 3인실, 4인실, 7인실, 8인실 -->
+        </div>
+      </div>
+
+      <!-- Ward-by-Ward Summary Grid (4 Wards) -->
+      <div style="margin-top: 24px;">
+        <h3 style="font-size:16px; font-weight:700; color:var(--slate-800); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+          <span>📊 병동별 집계 (총진료비 따로 · 환자부담금 따로)</span>
+        </h3>
+        <div class="grid4" id="ward-summary-grid">
+          <!-- Populated dynamically via JS: 5병동, 6병동, 7병동, 8병동 -->
+        </div>
+      </div>
+
+      <!-- Ward Filter Tabs -->
+      <div class="sim-ward-filter-bar" style="margin-top: 32px;">
+        <button type="button" class="sim-filter-btn active" data-filter="all" onclick="filterSimWard('all')">
+          전체 병실 (54)
+        </button>
+        <button type="button" class="sim-filter-btn" data-filter="5병동" onclick="filterSimWard('5병동')">
+          5병동 · 통합 (7)
+        </button>
+        <button type="button" class="sim-filter-btn" data-filter="6병동" onclick="filterSimWard('6병동')">
+          6병동 · 일반 (9)
+        </button>
+        <button type="button" class="sim-filter-btn" data-filter="7병동" onclick="filterSimWard('7병동')">
+          7병동 · 일반 (18)
+        </button>
+        <button type="button" class="sim-filter-btn" data-filter="8병동" onclick="filterSimWard('8병동')">
+          8병동 · 통합 (20)
+        </button>
+      </div>
+
+      <!-- Ward Batch Action Sub-bar -->
+      <div class="sim-sub-filter-action" id="sim-ward-batch-actions">
+        <!-- Shows current ward action, e.g. "7병동 전체 입실 / 7병동 전체 공실" -->
+      </div>
+
+      <!-- 54 Rooms Grid -->
+      <div class="sim-rooms-grid" id="sim-rooms-grid" style="margin-top: 12px;">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+    </div>
+  </div>
 
   <!-- Footer information -->
   <footer>
@@ -481,7 +608,7 @@
         
         <div class="ambulance-contacts-section">
           <div class="ambulance-contact-row">
-            <span class="ambulance-contact-label">📞 구급차</span>
+            <span class="ambulance-contact-label"> 📞 구급차</span>
             <a href="tel:010-2606-0423" class="ambulance-contact-link" style="font-size: 16px;">010-2606-0423</a>
           </div>
           <div class="ambulance-contact-row">

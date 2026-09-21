@@ -2,12 +2,12 @@
 // Decay points: d15 (1-15 days), d16 (16-30 days), d31 (31+ days)
 const INPATIENT_FEE_DB = {
   general: {
-    '2인실': { d15: 162560, d16: 148280, d31: 141140 },
+    '2인실': { d15: 124521, d16: 124521, d31: 124521 }, // 일반병동 2인실(715호) 실영수증 기준 일 124,521원 (본인부담 40% 기준 30일 약 149.4만~150만원, 31일 1,544,060원)
     '3인실': { d15: 142390, d16: 130150, d31: 124030 },
     '4인실': { d15: 121990, d16: 111790, d31: 106690 }
   },
   integrated: {
-    '2인실': { d15: 243450, d16: 219090, d31: 206920 },
+    '2인실': { d15: 243450, d16: 243450, d31: 243450 }, // 간호간병통합 2인실 체감 미적용 고정 수가 (실영수증 243,450원/일, 본인부담 40% 기준 30일 약 292만원, 31일 3,018,780원)
     '3인실': { d15: 228310, d16: 205470, d31: 194050 },
     '4인실': { d15: 213180, d16: 191850, d31: 181190 },
     '8인실': { d15: 182020, d16: 163810, d31: 154700 }
@@ -91,11 +91,19 @@ const MAX_PREPAY_CEILING_2026 = {
 };
 
 
-// Rehab treatment daily cost constants before insurance
+// Rehab treatment daily cost constants before insurance (2026 심평원 고시 및 영수증 실청구액 반영)
 const REHAB_COST_DAILY_BEFORE_INS = {
-  intensive: 185000,
-  standard: 95000,
+  intensive: 215000, // 일 215,000원 (실영수증 일 207,000~215,000원 기준, 월 약 650만원 상당, 본인부담 20% 약 129만원)
+  standard: 110000,  // 일 110,000원 (월 약 330만원 상당)
   none: 0
+};
+
+// 기본 진료·검사·약제비 일일 기준 (보험 적용 전 수가: 진찰료, 기본 혈액/소변검사, 영상진단, 기본 원내약제 및 필수처치료)
+const BASIC_CARE_DAILY_BEFORE_INS = {
+  '5병동': 50000,    // 5병동 8인실 간호간병통합 (급여 20% 본인부담 시 30일 약 30만원, 영수증 기준 총병원비 약 299만~300만원 맞춤)
+  '8병동_2인실': 85000, // 8병동 2인실 (급여 20% 본인부담 시 30일 약 51만원, 2인실 총액 약 510만원 기준)
+  general: 38000,    // 일반병동 기본 (3인실 718호 총액 약 310만원 기준)
+  integrated: 50000  // 간호간병통합병동 기본 (5병동 다인실 최대입원비 약 300만원 기준)
 };
 
 const ROOM_COP_FIXED = { '2인실': 0.40, '3인실': 0.30 };
@@ -133,4 +141,62 @@ const CONTACT_DIRECTORY = [
   { category: 'hosp', name: '큰솔2병원', tel: '051-322-9000', er: '-', fax: '051-322-0053', query: '큰솔병원' },
   { category: 'hosp', name: '파크사이드병원', tel: '051-629-8000', er: '-', fax: '051-429-8188', query: '파크사이드재활의학병원' },
   { category: 'hosp', name: '새봄병원', tel: '051-503-8288', er: '-', fax: '051-501-1555', query: '새봄병원' }
+];
+
+// 54개 병실 마스터 데이터 (병실별_수가적용_정리표.xlsx 기준)
+const ROOM_DIRECTORY_DATA = [
+  { id: '5병동_500', ward: '5병동', wardType: 'integrated', room: '500', roomType: '7인실', feeApplied: '7인실', baseRoomKey: '8인실', capacity: 7, note: '' },
+  { id: '5병동_501', ward: '5병동', wardType: 'integrated', room: '501', roomType: '8인실', feeApplied: '8인실', baseRoomKey: '8인실', capacity: 8, note: '' },
+  { id: '5병동_502', ward: '5병동', wardType: 'integrated', room: '502', roomType: '8인실', feeApplied: '8인실', baseRoomKey: '8인실', capacity: 8, note: '' },
+  { id: '5병동_503', ward: '5병동', wardType: 'integrated', room: '503', roomType: '8인실', feeApplied: '8인실', baseRoomKey: '8인실', capacity: 8, note: '' },
+  { id: '5병동_504', ward: '5병동', wardType: 'integrated', room: '504', roomType: '8인실', feeApplied: '8인실', baseRoomKey: '8인실', capacity: 8, note: '' },
+  { id: '5병동_505', ward: '5병동', wardType: 'integrated', room: '505', roomType: '7인실', feeApplied: '7인실', baseRoomKey: '8인실', capacity: 7, note: '' },
+  { id: '5병동_506', ward: '5병동', wardType: 'integrated', room: '506', roomType: '8인실', feeApplied: '8인실', baseRoomKey: '8인실', capacity: 8, note: '' },
+  { id: '6병동_601', ward: '6병동', wardType: 'general', room: '601', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_602', ward: '6병동', wardType: 'general', room: '602', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_603', ward: '6병동', wardType: 'general', room: '603', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_605', ward: '6병동', wardType: 'general', room: '605', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_606', ward: '6병동', wardType: 'general', room: '606', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '6병동_607', ward: '6병동', wardType: 'general', room: '607', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_608', ward: '6병동', wardType: 'general', room: '608', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '6병동_609', ward: '6병동', wardType: 'general', room: '609', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '6병동_610', ward: '6병동', wardType: 'general', room: '610', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_701', ward: '7병동', wardType: 'general', room: '701', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_702', ward: '7병동', wardType: 'general', room: '702', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_703', ward: '7병동', wardType: 'general', room: '703', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_704', ward: '7병동', wardType: 'general', room: '704', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_705', ward: '7병동', wardType: 'general', room: '705', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_706', ward: '7병동', wardType: 'general', room: '706', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '7병동_707', ward: '7병동', wardType: 'general', room: '707', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_708', ward: '7병동', wardType: 'general', room: '708', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_709', ward: '7병동', wardType: 'general', room: '709', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '7병동_710', ward: '7병동', wardType: 'general', room: '710', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_711', ward: '7병동', wardType: 'general', room: '711', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_712', ward: '7병동', wardType: 'general', room: '712', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_713', ward: '7병동', wardType: 'general', room: '713', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_714', ward: '7병동', wardType: 'general', room: '714', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '7병동_715', ward: '7병동', wardType: 'general', room: '715', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '7병동_717', ward: '7병동', wardType: 'general', room: '717', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
+  { id: '7병동_718', ward: '7병동', wardType: 'general', room: '718', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
+  { id: '7병동_720', ward: '7병동', wardType: 'general', room: '720', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_801', ward: '8병동', wardType: 'integrated', room: '801', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_802', ward: '8병동', wardType: 'integrated', room: '802', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_803', ward: '8병동', wardType: 'integrated', room: '803', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_804', ward: '8병동', wardType: 'integrated', room: '804', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_805', ward: '8병동', wardType: 'integrated', room: '805', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_806', ward: '8병동', wardType: 'integrated', room: '806', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_807', ward: '8병동', wardType: 'integrated', room: '807', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_808', ward: '8병동', wardType: 'integrated', room: '808', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_809', ward: '8병동', wardType: 'integrated', room: '809', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '8병동_810', ward: '8병동', wardType: 'integrated', room: '810', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_811', ward: '8병동', wardType: 'integrated', room: '811', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_812', ward: '8병동', wardType: 'integrated', room: '812', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_813', ward: '8병동', wardType: 'integrated', room: '813', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_814', ward: '8병동', wardType: 'integrated', room: '814', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_815', ward: '8병동', wardType: 'integrated', room: '815', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_816', ward: '8병동', wardType: 'integrated', room: '816', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_817', ward: '8병동', wardType: 'integrated', room: '817', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
+  { id: '8병동_818', ward: '8병동', wardType: 'integrated', room: '818', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_819', ward: '8병동', wardType: 'integrated', room: '819', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '8병동_820', ward: '8병동', wardType: 'integrated', room: '820', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' }
 ];
