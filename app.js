@@ -173,9 +173,9 @@ function parseInpatientRates(rows) {
   if (Object.keys(tempInpatientRates.integrated).length > 0) {
     Object.assign(INPATIENT_FEE_DB.integrated, tempInpatientRates.integrated);
   }
-  // 일반병동 2인실(715호) 영수증 확인 수가(일 124,521원, 본인부담 약 150만원) 고정 수가 유지
+  // 일반병동 2인실(715호) 병원비 약 390만원 기준 고정 수가 (일 168,125원, 30일 입원료 본인부담 약 201.7만원)
   if (INPATIENT_FEE_DB.general && INPATIENT_FEE_DB.general['2인실']) {
-    INPATIENT_FEE_DB.general['2인실'] = { d15: 124521, d16: 124521, d31: 124521 };
+    INPATIENT_FEE_DB.general['2인실'] = { d15: 168125, d16: 168125, d31: 168125 };
   }
   // 간호간병통합 2인실은 영수증 확인 수가(일 243,450원) 기준 체감 미적용 고정 수가 유지
   if (INPATIENT_FEE_DB.integrated && INPATIENT_FEE_DB.integrated['2인실']) {
@@ -1358,9 +1358,9 @@ function getRoomCalculation(item, isOccupied, mode) {
     basicBefore = 1500000; // 일 50,000원 * 30일
     basicCopay = 300000;  // 20%
   } else if (item.baseRoomKey === '2인실') {
-    // 7병동 2인실 (715호 일반병동 2인실)
-    roomBefore = 3735630;
-    roomCopay = 1494252; // 본인부담 40%
+    // 7병동 2인실 (715호 일반병동 2인실, 총 병원비 약 390만원 기준)
+    roomBefore = 5043750; // 일 168,125원 * 30일
+    roomCopay = 2017500;  // 본인부담 40%
     basicBefore = 1140000; // 일 38,000원 * 30일
     basicCopay = 228000;  // 20%
   } else if (item.baseRoomKey === '3인실') {
