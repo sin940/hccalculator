@@ -352,11 +352,28 @@ nav {
 .hero {
   background: radial-gradient(circle at 10% 20%, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 90%), 
               url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1200') no-repeat center/cover;
-  padding: 64px 24px 80px;
+  padding: 56px 24px 72px;
   text-align: center;
   color: var(--white);
   position: relative;
   overflow: hidden;
+}
+.hero-inner-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-main-content {
+  flex: 1;
+  text-align: center;
+}
+@media (min-width: 1140px) {
+  .hero-main-content {
+    padding-right: 300px;
+  }
 }
 .hero-badge {
   display: inline-flex;
@@ -1777,3 +1794,956 @@ footer strong {
   background: rgba(239, 68, 68, 0.08);
   color: #dc2626;
 }
+
+/* ========================================================
+   Admin Ward & Room Fee Management System Styling
+   ======================================================== */
+
+/* Nav Admin Link Button */
+.nav-link.nav-link-admin {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b !important;
+  font-weight: 700;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-link.nav-link-admin:hover {
+  background: #f59e0b;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Hero Admin Quick Trigger Card (Right Side of Hero) */
+.hero-admin-card {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 290px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 25px rgba(56, 189, 248, 0.25);
+  border-radius: 18px;
+  padding: 20px 22px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+.hero-admin-card:hover {
+  transform: translateY(calc(-50% - 5px));
+  border-color: #38bdf8;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.4);
+}
+.hero-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 3px 9px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.hero-admin-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: pulseDot 1.8s infinite;
+}
+@keyframes pulseDot {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+}
+.hero-admin-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-admin-desc {
+  font-size: 12px;
+  color: var(--slate-300);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.hero-admin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.hero-admin-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #93c5fd;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-hero-admin-action {
+  width: 100%;
+  background: linear-gradient(135deg, #2563eb, #0284c7);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--transition);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+.btn-hero-admin-action:hover {
+  background: linear-gradient(135deg, #1d4ed8, #0369a1);
+}
+
+@media (max-width: 1139px) {
+  .hero-admin-card {
+    position: static;
+    transform: none;
+    margin: 24px auto 0;
+    max-width: 440px;
+    width: 100%;
+  }
+  .hero-admin-card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* Admin PIN Modal */
+.admin-pin-modal-content {
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: var(--shadow-xl);
+  max-width: 380px;
+  width: 100%;
+  padding: 28px 24px 24px;
+  position: relative;
+  text-align: center;
+}
+.pin-input-box {
+  width: 100%;
+  font-size: 28px;
+  font-family: var(--font-en);
+  font-weight: 800;
+  letter-spacing: 12px;
+  text-align: center;
+  padding: 12px;
+  border: 2px solid var(--slate-300);
+  border-radius: 12px;
+  margin: 16px 0 10px;
+  outline: none;
+  color: var(--slate-900);
+  background: var(--slate-50);
+  transition: var(--transition);
+}
+.pin-input-box:focus {
+  border-color: var(--accent);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+.pin-error-msg {
+  color: #e11d48;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+
+/* Ward Fee Setting Management Modal */
+.ward-fee-modal-content {
+  background: var(--white);
+  border-radius: 22px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+  max-width: 960px;
+  width: 96%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPop {
+  0% { transform: scale(0.96) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.ward-fee-header {
+  padding: 20px 28px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: var(--white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ward-fee-title-wrap h2 {
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #ffffff;
+}
+.ward-fee-title-wrap p {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.ward-fee-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--slate-100);
+  border-bottom: 1px solid var(--slate-200);
+  overflow-x: auto;
+}
+.ward-fee-tab {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--slate-600);
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+.ward-fee-tab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ward-fee-tab.active {
+  background: var(--accent);
+  color: var(--white);
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.ward-fee-body {
+  padding: 22px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Info Banner in Modal */
+.ward-fee-info-banner {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #166534;
+  line-height: 1.5;
+}
+.ward-fee-info-banner strong {
+  color: #14532d;
+}
+
+/* Room Setting Card */
+.room-setting-card {
+  background: var(--white);
+  border: 1.5px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+.room-setting-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
+}
+.room-setting-card.modified {
+  border-color: #f59e0b;
+  background: #fffdfa;
+}
+
+.room-setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.room-setting-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.room-name-badge {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+.room-type-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.room-type-tag.integrated {
+  background: rgba(13, 148, 136, 0.1);
+  color: #0f766e;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+.room-type-tag.general {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+.room-copay-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--slate-100);
+  color: var(--slate-700);
+}
+
+.room-setting-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .room-setting-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.target-price-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.target-price-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate-700);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.target-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.target-price-input {
+  flex: 1;
+  font-size: 20px;
+  font-family: var(--font-en);
+  font-weight: 800;
+  color: var(--accent);
+  padding: 8px 14px;
+  border: 2px solid var(--slate-300);
+  border-radius: 10px;
+  outline: none;
+  background: var(--white);
+  transition: var(--transition);
+}
+.target-price-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.target-unit {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate-600);
+}
+
+.room-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+.room-preset-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate-600);
+  background: var(--slate-100);
+  border: 1px solid var(--slate-300);
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.room-preset-btn:hover {
+  background: var(--accent);
+  color: var(--white);
+  border-color: var(--accent);
+}
+
+.room-live-breakdown-box {
+  background: var(--slate-50);
+  border: 1px dashed var(--slate-300);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.breakdown-row:last-child {
+  margin-bottom: 0;
+}
+.breakdown-label {
+  color: var(--slate-600);
+}
+.breakdown-val {
+  font-weight: 700;
+  color: var(--slate-900);
+  font-family: var(--font-en);
+}
+.breakdown-val.highlight {
+  color: #b45309;
+  font-weight: 800;
+}
+
+/* Advanced Drawer in Room Card */
+.advanced-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--slate-500);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+.advanced-toggle-btn:hover {
+  color: var(--accent);
+}
+.advanced-drawer {
+  display: none;
+  background: var(--slate-100);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+.advanced-drawer.open {
+  display: block;
+}
+.advanced-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .advanced-fields-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.adv-field-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--slate-600);
+  margin-bottom: 3px;
+}
+.adv-field-input {
+  width: 100%;
+  font-size: 12px;
+  font-family: var(--font-en);
+  font-weight: 700;
+  padding: 6px 8px;
+  border: 1px solid var(--slate-300);
+  border-radius: 6px;
+  background: var(--white);
+}
+
+.room-reset-btn {
+  background: none;
+  border: 1px solid var(--slate-300);
+  color: var(--slate-600);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.room-reset-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Modal Footer */
+.ward-fee-footer {
+  padding: 16px 28px;
+  background: var(--slate-50);
+  border-top: 1px solid var(--slate-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ward-fee-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-footer-reset-all {
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-footer-reset-all:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+.btn-footer-pin-change {
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  color: var(--slate-700);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-footer-pin-change:hover {
+  background: var(--slate-100);
+}
+.ward-fee-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-footer-close {
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  color: var(--slate-700);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-footer-close:hover {
+  background: var(--slate-100);
+}
+.btn-footer-save {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
+  color: var(--white);
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-footer-save:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+}
+
+/* Success Toast Notification */
+.admin-toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  border-left: 5px solid #10b981;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.admin-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ========================================================
+   EMR Detailed Receipt & Ward Comparison Analysis Styling
+   ======================================================== */
+
+.checkbox-label-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--slate-50);
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.checkbox-label-card:hover {
+  background: var(--white);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+.checkbox-label-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.chk-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--slate-900);
+}
+.chk-desc {
+  font-size: 11.5px;
+  color: var(--slate-500);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* EMR Table Toggle & Table */
+.btn-emr-table-toggle {
+  width: 100%;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+.btn-emr-table-toggle:hover {
+  background: var(--slate-200);
+  color: var(--slate-900);
+}
+.emr-table-drawer {
+  display: none;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--slate-200);
+  background: var(--white);
+}
+.emr-table-drawer.open {
+  display: block;
+}
+.emr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.emr-table th {
+  background: var(--slate-800);
+  color: var(--white);
+  padding: 6px 8px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.emr-table th:first-child {
+  text-align: left;
+}
+.emr-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--slate-100);
+  text-align: right;
+  font-family: var(--font-en);
+  color: var(--slate-700);
+  white-space: nowrap;
+}
+.emr-table td:first-child {
+  text-align: left;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--slate-900);
+}
+.emr-table tr:last-child td {
+  background: var(--slate-50);
+  font-weight: 800;
+  border-top: 1.5px solid var(--slate-300);
+  color: var(--slate-900);
+}
+
+/* Ward Comparison Analysis Card */
+.ward-compare-analysis-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--slate-200);
+  padding: 24px;
+  margin-top: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+.ward-compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ward-compare-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+.ward-compare-badge {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.ward-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 768px) {
+  .ward-compare-grid {
+    grid-template-columns: 1fr;
+  }
+  .ward-compare-vs {
+    margin: 0 auto;
+  }
+}
+.ward-compare-col {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.ward-compare-col.highlight {
+  background: #f0fdf4;
+  border-color: #86efac;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.1);
+}
+.w-col-badge {
+  display: inline-block;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+.w-col-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 4px;
+}
+.w-col-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--slate-600);
+  margin-bottom: 10px;
+}
+.w-col-breakdown {
+  font-size: 11.5px;
+  color: var(--slate-600);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.w-col-total {
+  border-top: 1px dashed var(--slate-300);
+  padding-top: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+.text-emerald {
+  color: #059669 !important;
+}
+.ward-compare-vs {
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--slate-400);
+  background: var(--slate-100);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+.ward-compare-footer {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--slate-100);
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--slate-600);
+  line-height: 1.5;
+}
+
+/* Ward Fee Modal - Room & Ward Dynamic Management Styles */
+.ward-fee-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.btn-add-room-toggle {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+  transition: all 0.2s ease;
+}
+.btn-add-room-toggle:hover {
+  background: linear-gradient(135deg, #0f766e, #115e59);
+  transform: translateY(-1px);
+}
+.add-room-drawer {
+  background: #f0fdfa;
+  border: 2px dashed #5eead4;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.25s ease;
+}
+.add-room-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.add-room-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.room-name-inline-input {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--slate-900);
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 10px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+}
+.room-name-inline-input:focus {
+  border-color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.room-basekey-select {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate-700);
+  background: #ffffff;
+  border: 1px solid var(--slate-300);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+  cursor: pointer;
+}
+.room-delete-btn {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.room-delete-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+
