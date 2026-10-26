@@ -99,7 +99,78 @@ let currentModalDraft = {};
 let deletedDraftRooms = new Set();
 let activeSettingsTab = 'all';
 
+
+// 이전 로컬스토리지 잘못된 3인실 및 1인실 캐시 자동 교정 (Migration)
+function sanitizeLegacyLocalStorage() {
+  try {
+    const rawRooms = localStorage.getItem(STORAGE_KEY_WARD_ROOMS);
+    if (rawRooms) {
+      let data = JSON.parse(rawRooms);
+      let changed = false;
+      if (data && data.rooms) {
+        Object.keys(data.rooms).forEach(k => {
+          const r = data.rooms[k];
+          // 8병동 806, 815, 818호가 3인실인데 target30이 450만원 이상(구 2인실 금액)인 경우 자동 정상화
+          if (r.ward === '8병동' && (r.name.includes('806') || r.name.includes('815') || r.name.includes('818') || k.includes('806'))) {
+            r.baseRoomKey = '3인실';
+            r.fixedCopay = 0.30;
+            r.copayRate = 0.30;
+            if (r.target30 > 4500000 || r.d15 > 300000) {
+              r.target30 = 3894510;
+              r.d15 = 228310;
+              r.d16 = 205470;
+              r.d31 = 194050;
+              r.presets = [3700000, 3800000, 3890000, 3950000, 4100000];
+              changed = true;
+            }
+          }
+          // 7병동 1인실이 일 30만원 이상 또는 1000만원 이상인 경우 자동 정상화
+          if (r.ward === '7병동' && r.baseRoomKey === '1인실') {
+            if (r.target30 > 10000000 || (r.d15 && r.d15 > 280000)) {
+              r.target30 = 7942500;
+              r.d15 = 200000;
+              r.d16 = 200000;
+              r.d31 = 200000;
+              r.presets = [7500000, 7800000, 8000000, 8500000, 9000000];
+              changed = true;
+            }
+          }
+        });
+        if (changed) {
+          localStorage.setItem(STORAGE_KEY_WARD_ROOMS, JSON.stringify(data));
+        }
+      }
+    }
+
+    const rawFees = localStorage.getItem(STORAGE_KEY_WARD_FEES);
+    if (rawFees) {
+      let fees = JSON.parse(rawFees);
+      let feesChanged = false;
+      Object.keys(fees).forEach(k => {
+        if (k.includes('806') || k.includes('815') || k.includes('818') || k === '8병동_3인실' || k === '8병동_2인실') {
+          if (fees[k].target30 > 4500000 || (fees[k].customDailyRoom && fees[k].customDailyRoom.d15 > 300000)) {
+            delete fees[k];
+            feesChanged = true;
+          }
+        }
+        if (k.includes('7병동') && k.includes('1인실')) {
+          if (fees[k].target30 > 10000000 || (fees[k].customDailyRoom && fees[k].customDailyRoom.d15 > 280000)) {
+            delete fees[k];
+            feesChanged = true;
+          }
+        }
+      });
+      if (feesChanged) {
+        localStorage.setItem(STORAGE_KEY_WARD_FEES, JSON.stringify(fees));
+      }
+    }
+  } catch (err) {
+    console.warn('sanitizeLegacyLocalStorage error:', err);
+  }
+}
+
 function loadCustomWardRooms() {
+  sanitizeLegacyLocalStorage();
   try {
     const raw = localStorage.getItem(STORAGE_KEY_WARD_ROOMS);
     if (raw) {
@@ -154,7 +225,7 @@ function loadCustomWardFees() {
   }
 }
 
-// 30일 목표 환자본인부담금으로부터 1일 입원료/기본진료비 역산 엔진
+// 30일 목표 환자본인부담금으로부터 1일 입원료/기본진료비 역산 엔진 (개정판: 1인실 및 3인실 안정화)
 function calculateFeesFromTarget(itemDef, target30) {
   const validTarget = Math.max(500000, parseInt(target30, 10) || itemDef.target30);
   
@@ -162,19 +233,38 @@ function calculateFeesFromTarget(itemDef, target30) {
   const baseNonRoomCopay = 1942500;
   
   // 30일 목표 입원료 본인부담금
-  const targetRoomCopay = Math.max(100000, validTarget - baseNonRoomCopay);
+  const targetRoomCopay = Math.max(0, validTarget - baseNonRoomCopay);
+
+  // 1인실 (전액 비급여 / 본인부담 100%): 30일 병실료 = targetRoomCopay
+  if (itemDef.baseRoomKey === '1인실') {
+    const daily1RoomFee = Math.max(50000, Math.round(targetRoomCopay / 30));
+    return {
+      d15: daily1RoomFee,
+      d16: daily1RoomFee,
+      d31: daily1RoomFee,
+      basicCareDaily: itemDef.basicCareDaily || 38000,
+      scale: 1,
+      target30: validTarget
+    };
+  }
   
-  // 기본 정의된 30일 입원료 본인부담금
-  const default30RoomTotal = (15 * itemDef.d15 + 15 * itemDef.d16);
+  // 2인실, 3인실, 4인실, 8인실: 원본 DB 표준 수가 기준으로 스케일링하여 반복 오차 방지
+  const wardType = itemDef.type || 'general';
+  const baseRoomKey = itemDef.baseRoomKey || '4인실';
+  const feeDb = (INPATIENT_FEE_DB[wardType] && INPATIENT_FEE_DB[wardType][baseRoomKey])
+    ? INPATIENT_FEE_DB[wardType][baseRoomKey]
+    : { d15: 121990, d16: 111790, d31: 106690 };
+
+  const default30RoomTotal = (15 * feeDb.d15 + 15 * feeDb.d16);
   const copayMultiplier = itemDef.fixedCopay ? itemDef.fixedCopay : (itemDef.copayRate || 0.20);
   const default30RoomCopay = Math.round(default30RoomTotal * copayMultiplier);
   
   const scale = default30RoomCopay > 0 ? (targetRoomCopay / default30RoomCopay) : 1;
   
-  const computedD15 = Math.round(itemDef.d15 * scale);
-  const computedD16 = Math.round(itemDef.d16 * scale);
-  const computedD31 = Math.round(itemDef.d31 * scale);
-  const computedBasic = Math.round((itemDef.basicCareDaily || 50000) * scale);
+  const computedD15 = Math.round(feeDb.d15 * scale);
+  const computedD16 = Math.round(feeDb.d16 * scale);
+  const computedD31 = Math.round(feeDb.d31 * scale);
+  const computedBasic = Math.round((itemDef.basicCareDaily || 50000) * (scale > 1.3 ? 1 : scale));
   
   return {
     d15: computedD15,
@@ -1031,7 +1121,13 @@ function renderEmrTable(items) {
   
   const rowsData = [
     { name: '1. 진찰료', total: items.consultTotalBefore, copay: items.consultCopay },
-    { name: '2. 입원료 (간호간병/일반)', total: items.baseRoomTotal, copay: items.roomCopayPatient },
+    { 
+      name: (items.wardType === 'general') 
+        ? '2. 입원료 (일반병동 - 통합간병✕)' 
+        : '2. 입원료 (간호간병통합)', 
+      total: items.baseRoomTotal, 
+      copay: items.roomCopayPatient 
+    },
     { name: '3. 식사료 (급여 식대)', total: items.totalMealCostBeforeIns, copay: items.mealCopayPatient },
     { name: '4. 투약료 (행위+재료)', total: items.medTotalBefore, copay: items.medCopayPatient },
     { name: '5. 처치 및 수술료', total: items.procSurgBefore, copay: items.procSurgCopay },
@@ -1170,7 +1266,9 @@ function calculateAll() {
 
   // Handle special billing category (의료급여 1종, 2종장애인, 차상위 1종)
   if (insObj.type === 'special_billing') {
-    recWardRoom.textContent = `${selectedWard} ${roomDisplayName}`;
+    const isIntegratedWard = (wardType === 'integrated');
+  const wardServiceTypeDesc = isIntegratedWard ? '간호간병통합' : '일반병동 (통합간병 ✕)';
+  recWardRoom.textContent = `${selectedWard} ${roomDisplayName} [${wardServiceTypeDesc}]`;
     recInsurance.textContent = `${insObj.name} (식대+전액+비급여)`;
     recDays.textContent = `${selectedDays}일`;
     if (recConsultTotal) recConsultTotal.textContent = '별도 산정';
@@ -1276,12 +1374,22 @@ function calculateAll() {
   const grandTotal = benefitCopayTotal + mealCopayPatient + nonBenefitTotal;
 
   // 12. Update Receipt Panel DOM
-  recWardRoom.textContent = `${selectedWard} ${roomDisplayName}`;
+  const isIntegratedWard = (wardType === 'integrated');
+  const wardServiceTypeDesc = isIntegratedWard ? '간호간병통합' : '일반병동 (통합간병 ✕)';
+  recWardRoom.textContent = `${selectedWard} ${roomDisplayName} [${wardServiceTypeDesc}]`;
   recInsurance.textContent = `${insObj.label} (${insObj.type === 'workers_comp' ? '산재' : insObj.rate * 100 + '%'})`;
   recDays.textContent = `${selectedDays}일`;
   
   if (recConsultTotal) recConsultTotal.textContent = fmt(consultTotalBefore);
   recBaseRoomTotal.textContent = fmt(baseRoomTotal);
+  const recRoomLabelEl = document.getElementById('rec-room-label');
+  if (recRoomLabelEl) {
+    if (wardType === 'general') {
+      recRoomLabelEl.textContent = '2. 입원료 총액 (일반병동 - 통합간병✕)';
+    } else {
+      recRoomLabelEl.textContent = '2. 입원료 총액 (간호간병통합)';
+    }
+  }
   
   if (insObj.type === 'workers_comp' && isUpperRoom) {
     recSurchargeRow.style.display = 'flex';
@@ -1322,10 +1430,15 @@ function calculateAll() {
   
   recGrandTotal.textContent = fmt(grandTotal);
   mobilePrice.textContent = fmt(grandTotal);
-  receiptFootnote.textContent = "※ 실제 병원 전산 영수증 기준 진찰·입원·식대·약제·검사·집중재활·선별급여를 100% 충실히 반영한 모의 명세서입니다.";
+  if (wardType === 'general') {
+    receiptFootnote.innerHTML = `※ <strong>6·7병동은 일반병동</strong>으로 통합간병료가 적용되지 않으며(개인간병 또는 보호자 상주), 실제 병원 전산 영수증 기준 진찰·입원·식대·약제·검사·재활 수가를 충실히 반영한 모의 명세서입니다.`;
+  } else {
+    receiptFootnote.innerHTML = `※ <strong>5·8병동은 간호간병통합서비스 병동</strong>으로 통합간병료가 포함되어 있으며, 실제 전산 영수증 기준 진찰·입원·식대·약제·검사·선별급여를 100% 반영한 모의 명세서입니다.`;
+  }
 
   // 13. Populate EMR Table Drawer
   renderEmrTable({
+    wardType,
     consultTotalBefore, consultCopay,
     baseRoomTotal, roomCopayPatient,
     totalMealCostBeforeIns, mealCopayPatient,
@@ -2302,9 +2415,9 @@ function suggestNewRoomDefaults(ward, baseKey) {
   
   if (baseKey === '1인실') {
     if (nameInput && (!nameInput.value || nameInput.value.includes('인실'))) {
-      nameInput.value = `1인실 (${wardNum}20호 VIP)`;
+      nameInput.value = (ward === '7병동') ? '1인실 (706호)' : `1인실 (${wardNum}20호)`;
     }
-    if (targetInput) targetInput.value = (ward === '5병동' || ward === '8병동') ? 7500000 : 6500000;
+    if (targetInput) targetInput.value = (ward === '5병동' || ward === '8병동') ? 9500000 : 7942500;
   } else if (baseKey === '2인실') {
     if (nameInput && (!nameInput.value || nameInput.value.includes('인실'))) {
       nameInput.value = `2인실 (${wardNum}15호)`;
@@ -2424,6 +2537,30 @@ function onDraftBaseKeyChange(k, newBaseKey) {
   item.fixedCopay = ROOM_COP_FIXED[newBaseKey] || null;
   item.copayRate = item.fixedCopay || 0.20;
 
+  // 수가 등급 변경 시 적정 target30 및 프리셋 자동 갱신 (비정상적인 단가 폭등 원천 방지)
+  if (newBaseKey === '1인실') {
+    item.target30 = 7942500; // 일 20만원 병실료 600만 + 급여 194.2만 = 약 794만~800만원
+    item.presets = [7500000, 7800000, 8000000, 8500000, 9000000];
+  } else if (newBaseKey === '2인실') {
+    item.target30 = (item.ward === '5병동' || item.ward === '8병동') ? 5085900 : 3900000;
+    item.presets = (item.ward === '5병동' || item.ward === '8병동')
+      ? [4800000, 4950000, 5080000, 5100000, 5300000]
+      : [3700000, 3800000, 3900000, 4000000, 4200000];
+  } else if (newBaseKey === '3인실') {
+    item.target30 = (item.ward === '5병동' || item.ward === '8병동') ? 3894510 : 3108930;
+    item.presets = (item.ward === '5병동' || item.ward === '8병동')
+      ? [3700000, 3800000, 3890000, 3950000, 4100000]
+      : [2900000, 3000000, 3100000, 3200000, 3300000];
+  } else if (newBaseKey === '4인실') {
+    item.target30 = (item.ward === '5병동' || item.ward === '8병동') ? 3100000 : 2600000;
+    item.presets = (item.ward === '5병동' || item.ward === '8병동')
+      ? [2900000, 3000000, 3100000, 3170000, 3250000]
+      : [2400000, 2500000, 2580000, 2600000, 2700000];
+  } else if (newBaseKey === '8인실') {
+    item.target30 = 2991990;
+    item.presets = [2800000, 2900000, 2990000, 3000000, 3100000];
+  }
+
   const wardType = item.type || 'general';
   const feeDb = (INPATIENT_FEE_DB[wardType] && INPATIENT_FEE_DB[wardType][newBaseKey]) 
     ? INPATIENT_FEE_DB[wardType][newBaseKey] 
@@ -2439,7 +2576,7 @@ function onDraftBaseKeyChange(k, newBaseKey) {
   item.d31 = computed.d31;
   item.basicCareDaily = computed.basicCareDaily;
 
-  updateCardLiveDisplay(k);
+  renderWardFeeModal();
 }
 
 function deleteDraftRoom(k) {

@@ -2,13 +2,13 @@
 // Decay points: d15 (1-15 days), d16 (16-30 days), d31 (31+ days)
 const INPATIENT_FEE_DB = {
   general: {
-    '1인실': { d15: 350000, d16: 350000, d31: 350000 }, // 일반병동 1인실 상급병실 차액 일 35만원 (전액 비급여/본인부담)
+    '1인실': { d15: 200000, d16: 200000, d31: 200000 }, // 일반병동 1인실 상급병실료 일 20만원 (30일 600만원), // 일반병동 1인실 상급병실 차액 일 35만원 (전액 비급여/본인부담)
     '2인실': { d15: 168125, d16: 168125, d31: 168125 }, // 일반병동 2인실(715호) 병원비 약 390만원 기준 일 168,125원 (본인부담 40% 기준 30일 입원료 약 201.7만원)
     '3인실': { d15: 142390, d16: 130150, d31: 124030 },
     '4인실': { d15: 121990, d16: 111790, d31: 106690 }
   },
   integrated: {
-    '1인실': { d15: 450000, d16: 450000, d31: 450000 }, // 간호간병통합 1인실 상급병실 차액 일 45만원
+    '1인실': { d15: 250000, d16: 250000, d31: 250000 }, // 간호간병통합 1인실 상급병실료 일 25만원, // 간호간병통합 1인실 상급병실 차액 일 45만원
     '2인실': { d15: 243450, d16: 243450, d31: 243450 }, // 간호간병통합 2인실 체감 미적용 고정 수가 (실영수증 243,450원/일, 본인부담 40% 기준 30일 약 292만원, 31일 3,018,780원)
     '3인실': { d15: 228310, d16: 205470, d31: 194050 },
     '4인실': { d15: 213180, d16: 191850, d31: 181190 },
@@ -37,7 +37,8 @@ const WARD_ROOM_CONFIG = {
       '4인실': { name: '4인실', baseRoomKey: '4인실' },
       '3인실': { name: '3인실 (717호, 718호)', baseRoomKey: '3인실' },
       '3인실 [4인실 수가]': { name: '3인실 (706호, 709호) [4인실 수가]', baseRoomKey: '4인실' },
-      '2인실': { name: '2인실 (715호)', baseRoomKey: '2인실' }
+      '1인실 (706호)': { name: '1인실 (706호)', baseRoomKey: '1인실' },
+      '1인실 (715호 VIP)': { name: '1인실 (715호 VIP)', baseRoomKey: '1인실' }
     }
   },
   '8병동': {
@@ -45,7 +46,7 @@ const WARD_ROOM_CONFIG = {
     rooms: {
       '4인실': { name: '4인실', baseRoomKey: '4인실' },
       '3인실 [4인실 수가]': { name: '3인실 (809호, 819호) [4인실 수가]', baseRoomKey: '4인실' },
-      '2인실': { name: '2인실 (806호, 815호, 818호)', baseRoomKey: '2인실' }
+      '3인실': { name: '3인실 (806호, 815호, 818호)', baseRoomKey: '3인실' }
     }
   }
 };
@@ -142,20 +143,35 @@ const DEFAULT_WARD_ROOM_SETTINGS = {
     fixedCopay: null,
     presets: [2400000, 2500000, 2580000, 2600000, 2700000]
   },
-  '7병동_2인실': {
+  '7병동_1인실 (706호)': {
     ward: '7병동',
-    roomKey: '2인실',
-    name: '2인실 (715호)',
+    roomKey: '1인실 (706호)',
+    name: '1인실 (706호)',
     type: 'general',
-    baseRoomKey: '2인실',
-    target30: 3900000, // 약 390만원
-    d15: 168125,
-    d16: 168125,
-    d31: 168125,
+    baseRoomKey: '1인실',
+    target30: 7942500, // 30일 약 800만원 (1일 20만원 병실료 600만 + 급여 본인부담 약 194.2만)
+    d15: 200000,
+    d16: 200000,
+    d31: 200000,
     basicCareDaily: 38000,
-    copayRate: 0.40,
-    fixedCopay: 0.40,
-    presets: [3700000, 3800000, 3900000, 4000000, 4200000]
+    copayRate: 1.00,
+    fixedCopay: 1.00,
+    presets: [7500000, 7800000, 8000000, 8500000, 9000000]
+  },
+  '7병동_1인실 (715호 VIP)': {
+    ward: '7병동',
+    roomKey: '1인실 (715호 VIP)',
+    name: '1인실 (715호 VIP)',
+    type: 'general',
+    baseRoomKey: '1인실',
+    target30: 9442500, // 30일 약 950만원 (1일 25만원 VIP 병실료 750만 + 급여 본인부담 약 194.2만)
+    d15: 250000,
+    d16: 250000,
+    d31: 250000,
+    basicCareDaily: 38000,
+    copayRate: 1.00,
+    fixedCopay: 1.00,
+    presets: [8500000, 9000000, 9500000, 10000000, 10500000]
   },
   '8병동_4인실': {
     ward: '8병동',
@@ -187,20 +203,20 @@ const DEFAULT_WARD_ROOM_SETTINGS = {
     fixedCopay: null,
     presets: [2900000, 3000000, 3100000, 3170000, 3250000]
   },
-  '8병동_2인실': {
+  '8병동_3인실': {
     ward: '8병동',
-    roomKey: '2인실',
-    name: '2인실 (806호, 815호, 818호)',
+    roomKey: '3인실',
+    name: '3인실 (806호, 815호, 818호)',
     type: 'integrated',
-    baseRoomKey: '2인실',
-    target30: 5085900, // 약 510만원
-    d15: 243450,
-    d16: 243450,
-    d31: 243450,
-    basicCareDaily: 85000,
-    copayRate: 0.40,
-    fixedCopay: 0.40,
-    presets: [4800000, 4950000, 5080000, 5100000, 5300000]
+    baseRoomKey: '3인실',
+    target30: 3894510, // 30일 환자본인부담 약 390만원 (입원료 30% 약 195.2만 + 집중재활/식대/검사 등 194.2만)
+    d15: 228310,
+    d16: 205470,
+    d31: 194050,
+    basicCareDaily: 50000,
+    copayRate: 0.30,
+    fixedCopay: 0.30,
+    presets: [3700000, 3800000, 3890000, 3950000, 4100000]
   }
 };
 
@@ -359,7 +375,7 @@ const ROOM_DIRECTORY_DATA = [
   { id: '7병동_703', ward: '7병동', wardType: 'general', room: '703', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_704', ward: '7병동', wardType: 'general', room: '704', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_705', ward: '7병동', wardType: 'general', room: '705', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '7병동_706', ward: '7병동', wardType: 'general', room: '706', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
+  { id: '7병동_706', ward: '7병동', wardType: 'general', room: '706', roomType: '1인실', feeApplied: '1인실', baseRoomKey: '1인실', capacity: 1, note: '1인실 신설' },
   { id: '7병동_707', ward: '7병동', wardType: 'general', room: '707', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_708', ward: '7병동', wardType: 'general', room: '708', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_709', ward: '7병동', wardType: 'general', room: '709', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
@@ -368,7 +384,7 @@ const ROOM_DIRECTORY_DATA = [
   { id: '7병동_712', ward: '7병동', wardType: 'general', room: '712', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_713', ward: '7병동', wardType: 'general', room: '713', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_714', ward: '7병동', wardType: 'general', room: '714', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '7병동_715', ward: '7병동', wardType: 'general', room: '715', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '7병동_715', ward: '7병동', wardType: 'general', room: '715', roomType: '1인실 VIP', feeApplied: '1인실', baseRoomKey: '1인실', capacity: 1, note: '1인실 VIP 전환' },
   { id: '7병동_717', ward: '7병동', wardType: 'general', room: '717', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
   { id: '7병동_718', ward: '7병동', wardType: 'general', room: '718', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
   { id: '7병동_720', ward: '7병동', wardType: 'general', room: '720', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
@@ -377,7 +393,7 @@ const ROOM_DIRECTORY_DATA = [
   { id: '8병동_803', ward: '8병동', wardType: 'integrated', room: '803', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_804', ward: '8병동', wardType: 'integrated', room: '804', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_805', ward: '8병동', wardType: 'integrated', room: '805', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '8병동_806', ward: '8병동', wardType: 'integrated', room: '806', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_806', ward: '8병동', wardType: 'integrated', room: '806', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '3인실 전환 완료' },
   { id: '8병동_807', ward: '8병동', wardType: 'integrated', room: '807', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_808', ward: '8병동', wardType: 'integrated', room: '808', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_809', ward: '8병동', wardType: 'integrated', room: '809', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
@@ -386,10 +402,10 @@ const ROOM_DIRECTORY_DATA = [
   { id: '8병동_812', ward: '8병동', wardType: 'integrated', room: '812', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_813', ward: '8병동', wardType: 'integrated', room: '813', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_814', ward: '8병동', wardType: 'integrated', room: '814', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '8병동_815', ward: '8병동', wardType: 'integrated', room: '815', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_815', ward: '8병동', wardType: 'integrated', room: '815', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '3인실 전환 완료' },
   { id: '8병동_816', ward: '8병동', wardType: 'integrated', room: '816', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '8병동_817', ward: '8병동', wardType: 'integrated', room: '817', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '8병동_818', ward: '8병동', wardType: 'integrated', room: '818', roomType: '2인실', feeApplied: '2인실', baseRoomKey: '2인실', capacity: 2, note: '' },
+  { id: '8병동_818', ward: '8병동', wardType: 'integrated', room: '818', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '3인실 전환 완료' },
   { id: '8병동_819', ward: '8병동', wardType: 'integrated', room: '819', roomType: '3인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 3, note: '3인실이나 4인실 수가 적용' },
   { id: '8병동_820', ward: '8병동', wardType: 'integrated', room: '820', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' }
 ];

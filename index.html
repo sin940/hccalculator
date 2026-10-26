@@ -114,11 +114,11 @@
               </div>
               <div class="btn-opt" data-ward="6병동">
                 <span class="btn-opt-title">6병동</span>
-                <span class="btn-opt-desc">일반병동</span>
+                <span class="btn-opt-desc">일반병동 (통합간병✕)</span>
               </div>
               <div class="btn-opt" data-ward="7병동">
                 <span class="btn-opt-title">7병동</span>
-                <span class="btn-opt-desc">일반병동</span>
+                <span class="btn-opt-desc">일반병동 (통합간병✕)</span>
               </div>
               <div class="btn-opt" data-ward="8병동">
                 <span class="btn-opt-title">8병동</span>
@@ -379,7 +379,7 @@
               <span class="receipt-val" id="rec-consult-total">293,110원</span>
             </div>
             <div class="receipt-row">
-              <span class="receipt-label">2. 입원료 총액 (간호간병/일반)</span>
+              <span class="receipt-label" id="rec-room-label">2. 입원료 총액 (간호간병/일반)</span>
               <span class="receipt-val" id="rec-base-room-total">0원</span>
             </div>
             <div class="receipt-row" id="rec-surcharge-row">
@@ -867,8 +867,8 @@
         <button type="button" class="ward-fee-tab active" data-tab="all" onclick="switchSettingsWardTab('all')">전체 병동 (5·6·7·8)</button>
         <button type="button" class="ward-fee-tab" data-tab="5병동" onclick="switchSettingsWardTab('5병동')">5병동 · 간호간병통합 (8인실)</button>
         <button type="button" class="ward-fee-tab" data-tab="6병동" onclick="switchSettingsWardTab('6병동')">6병동 · 일반병동 (4·3인실)</button>
-        <button type="button" class="ward-fee-tab" data-tab="7병동" onclick="switchSettingsWardTab('7병동')">7병동 · 일반병동 (4·3·2인실)</button>
-        <button type="button" class="ward-fee-tab" data-tab="8병동" onclick="switchSettingsWardTab('8병동')">8병동 · 간호간병통합 (4·3·2인실)</button>
+        <button type="button" class="ward-fee-tab" data-tab="7병동" onclick="switchSettingsWardTab('7병동')">7병동 · 일반병동 (4·3·2·1인실)</button>
+        <button type="button" class="ward-fee-tab" data-tab="8병동" onclick="switchSettingsWardTab('8병동')">8병동 · 간호간병통합 (4·3인실)</button>
       </div>
 
       <!-- Body -->
