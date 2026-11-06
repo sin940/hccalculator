@@ -16,22 +16,78 @@
 <body>
 
   <!-- Navigation Menu -->
-  <nav>
+    <!-- Navigation Menu -->
+  <nav class="main-navbar">
     <div class="nav-inner">
       <a class="nav-logo" href="https://www.snh.or.kr/main/main.php" target="_blank" rel="noopener noreferrer">
         <div class="nav-logo-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
         </div>
-        <strong>해운대나눔과행복병원</strong>
+        <span class="nav-logo-text">해운대나눔과행복병원</span>
       </a>
-      <div class="nav-links">
+
+      <!-- Desktop Navigation Links -->
+      <div class="nav-links" id="desktop-nav-links">
         <button class="nav-link active" id="nav-btn-calc" onclick="switchView('calc')">입원비 계산기</button>
-        <button class="nav-link" id="nav-btn-room-sim" onclick="switchView('room-sim')" style="color: #2563eb; font-weight: 700; background: rgba(37, 99, 235, 0.08);">🏥 병실별 예상금액</button>
+        <button class="nav-link" id="nav-btn-room-sim" onclick="switchView('room-sim')" style="color: #60a5fa; font-weight: 700;">🏥 병실별 예상금액</button>
         <button class="nav-link nav-link-admin" onclick="openWardFeeSettingsModal()">⚙️ 병동 금액 설정</button>
-        <button class="nav-link" onclick="openAmbulanceModal()" style="color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.08);">🚑 사설구급차 연락처</button>
-        <button class="nav-link" onclick="openDirectoryModal()" style="color: #0d9488; font-weight: 700; background: rgba(13, 148, 136, 0.08);">📋 주요 연락처 및 FAX</button>
+        <button class="nav-link" onclick="openAmbulanceModal()" style="color: #f87171; font-weight: 700;">🚑 사설구급차</button>
+        <button class="nav-link" onclick="openDirectoryModal()" style="color: #2dd4bf; font-weight: 700;">📋 주요 연락처 및 FAX</button>
         <button class="nav-link" onclick="window.scrollTo({top: document.getElementById('tips').offsetTop - 90, behavior: 'smooth'})">알아두기 (고시 정보)</button>
         <a class="nav-link active-btn" href="https://www.snh.or.kr/sub01/sub03_01.php" target="_blank" rel="noopener noreferrer">진료시간표</a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <div class="nav-mobile-toggle">
+        <button type="button" class="btn-mobile-menu" id="btn-mobile-menu" onclick="toggleMobileMenu()" aria-label="메뉴 열기">
+          <span class="hamburger-icon">☰</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Horizontal Quick Scroll Bar (가로 스와이프로 1터치 깔끔 전환) -->
+    <div class="nav-mobile-scroll" id="nav-mobile-scroll">
+      <button class="nav-pill active" id="m-pill-calc" onclick="switchView('calc')">입원비 계산기</button>
+      <button class="nav-pill pill-sim" id="m-pill-room-sim" onclick="switchView('room-sim')">🏥 병실별 금액</button>
+      <button class="nav-pill pill-admin" onclick="openWardFeeSettingsModal()">⚙️ 병동설정</button>
+      <button class="nav-pill pill-amb" onclick="openAmbulanceModal()">🚑 사설구급차</button>
+      <button class="nav-pill pill-dir" onclick="openDirectoryModal()">📋 연락처·FAX</button>
+      <button class="nav-pill" onclick="window.scrollTo({top: document.getElementById('tips').offsetTop - 120, behavior: 'smooth'})">💡 고시안내</button>
+      <a class="nav-pill" href="https://www.snh.or.kr/sub01/sub03_01.php" target="_blank" rel="noopener noreferrer">📅 진료시간표</a>
+    </div>
+
+    <!-- Mobile Dropdown Drawer (전체 메뉴) -->
+    <div class="nav-mobile-drawer" id="nav-mobile-drawer" style="display: none;">
+      <div class="nav-drawer-links">
+        <button class="nav-drawer-item active" onclick="switchView('calc'); toggleMobileMenu();">
+          <span>🏨 회복기 입원비 계산기</span>
+          <span class="nav-drawer-tag">기본</span>
+        </button>
+        <button class="nav-drawer-item" onclick="switchView('room-sim'); toggleMobileMenu();" style="color: #60a5fa;">
+          <span>🏥 54개 병실별 실시간 예상금액</span>
+          <span class="nav-drawer-tag" style="background: rgba(96,165,250,0.15); color:#60a5fa;">시뮬레이터</span>
+        </button>
+        <button class="nav-drawer-item" onclick="openWardFeeSettingsModal(); toggleMobileMenu();" style="color: #fbbf24;">
+          <span>⚙️ 병동·병실별 금액 설정 (원무전용)</span>
+          <span class="nav-drawer-tag" style="background: rgba(251,191,36,0.15); color:#fbbf24;">관리자</span>
+        </button>
+        <button class="nav-drawer-item" onclick="openAmbulanceModal(); toggleMobileMenu();" style="color: #f87171;">
+          <span>🚑 사설 구급차 (해운대센텀911) 직통</span>
+          <span class="nav-drawer-tag" style="background: rgba(248,113,113,0.15); color:#f87171;">24시간</span>
+        </button>
+        <button class="nav-drawer-item" onclick="openDirectoryModal(); toggleMobileMenu();" style="color: #2dd4bf;">
+          <span>📋 주요 기관 및 인근 병원 연락처/FAX</span>
+          <span class="nav-drawer-tag" style="background: rgba(45,212,191,0.15); color:#2dd4bf;">전화번호부</span>
+        </button>
+        <button class="nav-drawer-item" onclick="window.scrollTo({top: document.getElementById('tips').offsetTop - 90, behavior: 'smooth'}); toggleMobileMenu();">
+          <span>💡 심평원 고시 &amp; 입원 전 필수 확인사항</span>
+        </button>
+        <a class="nav-drawer-item" href="https://www.snh.or.kr/sub01/sub03_01.php" target="_blank" rel="noopener noreferrer">
+          <span>📅 병원 공식 진료시간표 확인 ➔</span>
+        </a>
+      </div>
+      <div class="nav-drawer-footer">
+        <a href="tel:051-744-0123" class="btn-drawer-call">📞 병원 대표전화: 051-744-0123</a>
       </div>
     </div>
   </nav>
@@ -714,7 +770,7 @@
         <span class="mobile-cta-label">예상 본인부담금</span>
         <span class="mobile-cta-price" id="mobile-price">0원</span>
       </div>
-      <button class="btn-action-primary" style="width: auto; padding: 10px 20px; font-size: 13px;" onclick="window.scrollTo({top: document.getElementById('calc-section').offsetTop - 90, behavior: 'smooth'})">
+      <button class="btn-action-primary" style="width: auto; padding: 10px 20px; font-size: 13px;" onclick="scrollToMobileReceipt()">
         상세 내역 보기
       </button>
     </div>
@@ -1015,6 +1071,8 @@
     <!-- Firebase SDK (Realtime Database for Instant Multi-Device Sync) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <script src="firebase-config.js"></script>
   <script src="data.js"></script>
   <script src="app.js" defer></script>

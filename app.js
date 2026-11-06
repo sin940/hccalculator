@@ -2988,19 +2988,7 @@ function saveWardFeeSettings() {
     deletedDraftRooms.clear();
 
     // 5. Push to Firebase Cloud Database (if connected)
-    if (firebaseDb) {
-      firebaseDb.ref('wardRoomSettings').set({
-        rooms: roomsToPersist,
-        fees: customWardFees,
-        updatedAt: new Date().toISOString(),
-        updatedBy: '원무관리자'
-      }).then(() => {
-        showAdminToast('☁️ 클라우드 동기화 완료! 병원 내 모든 기기에 실시간 공유되었습니다.');
-      }).catch(err => {
-        console.warn('Firebase push failed:', err);
-        showAdminToast('⚠️ 로컬 저장은 완료되었으나 클라우드 공유에 실패했습니다. (DB 규칙 확인 필요)');
-      });
-    }
+    pushSettingsToCloud(roomsToPersist, customWardFees, '원무관리자');
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -3056,14 +3044,7 @@ function resetAllWardFeesToDefault() {
     }
   };
 
-  if (firebaseDb) {
-    firebaseDb.ref('wardRoomSettings').set({
-      rooms: DEFAULT_WARD_ROOM_SETTINGS,
-      fees: {},
-      updatedAt: new Date().toISOString(),
-      updatedBy: '공식기본값초기화'
-    });
-  }
+  pushSettingsToCloud(DEFAULT_WARD_ROOM_SETTINGS, {}, '공식기본값초기화');
 
   showWardFeeModal();
   renderRoomSelector();
@@ -3138,10 +3119,12 @@ init();
 
 
 // ========================================================
-// Firebase Realtime Cloud Synchronization Engine
+// Firebase Realtime Cloud Synchronization Engine (Firestore & Realtime DB Dual Support)
 // ========================================================
 let firebaseDb = null;
+let firestoreDb = null;
 let isFirebaseConnected = false;
+let activeCloudDriver = null; // 'firestore' or 'realtime'
 
 function initFirebaseSync() {
   const syncDot = document.getElementById('firebase-sync-dot');
@@ -3157,68 +3140,136 @@ function initFirebaseSync() {
     if (!firebase.apps || !firebase.apps.length) {
       firebase.initializeApp(FIREBASE_CONFIG);
     }
-    firebaseDb = firebase.database();
     
     if (syncText) syncText.textContent = '☁️ 클라우드 동기화 확인 중...';
 
-    // Realtime Listener for Ward Room Settings
-    const settingsRef = firebaseDb.ref('wardRoomSettings');
-    settingsRef.on('value', (snapshot) => {
-      const remoteData = snapshot.val();
-      isFirebaseConnected = true;
-      if (syncDot) syncDot.className = 'firebase-sync-dot connected';
-      if (syncText) syncText.innerHTML = '🟢 <strong>클라우드 실시간 동기화 활성</strong> <span style="font-size:11px;">(전 기기 자동 공유 중)</span>';
-      
-      if (remoteData) {
-        let changed = false;
-        if (remoteData.rooms) {
-          Object.keys(WARD_ROOM_CONFIG).forEach(w => {
-            WARD_ROOM_CONFIG[w].rooms = {};
-          });
-          Object.keys(remoteData.rooms).forEach(k => {
-            const r = remoteData.rooms[k];
-            if (!r.deleted) {
-              if (!WARD_ROOM_CONFIG[r.ward]) {
-                WARD_ROOM_CONFIG[r.ward] = { type: r.type || 'general', rooms: {} };
-              }
-              WARD_ROOM_CONFIG[r.ward].rooms[r.roomKey] = {
-                name: r.name,
-                baseRoomKey: r.baseRoomKey
-              };
-              DEFAULT_WARD_ROOM_SETTINGS[k] = r;
-            } else {
-              delete DEFAULT_WARD_ROOM_SETTINGS[k];
-            }
-          });
-          changed = true;
-        }
-        
-        if (remoteData.fees) {
-          customWardFees = JSON.parse(JSON.stringify(remoteData.fees));
-          changed = true;
-        }
-
-        if (changed) {
-          renderRoomSelector();
-          calculateAll();
-          renderRoomSimulation();
-          const wardFeeModal = document.getElementById('ward-fee-modal');
-          if (wardFeeModal && wardFeeModal.classList.contains('show')) {
-            renderWardFeeModal();
+    // 1. Try Cloud Firestore first
+    if (typeof firebase.firestore === 'function') {
+      try {
+        firestoreDb = firebase.firestore();
+        const docRef = firestoreDb.collection('hosp_settings').doc('wardRooms');
+        docRef.onSnapshot((doc) => {
+          isFirebaseConnected = true;
+          activeCloudDriver = 'firestore';
+          if (syncDot) syncDot.className = 'firebase-sync-dot connected';
+          if (syncText) syncText.innerHTML = '🟢 <strong>클라우드 실시간 동기화 활성 (Firestore)</strong> <span style="font-size:11px;">(전 기기 자동 공유 중)</span>';
+          
+          if (doc.exists) {
+            const remoteData = doc.data();
+            applyRemoteSyncData(remoteData);
           }
-        }
+        }, (err) => {
+          console.warn('Firestore listen notification:', err);
+          tryRealtimeDbFallback(syncDot, syncText);
+        });
+        return;
+      } catch (err) {
+        console.warn('Firestore init fallback:', err);
       }
-    }, (error) => {
-      console.warn('Firebase sync read warning:', error);
-      isFirebaseConnected = false;
-      if (syncDot) syncDot.className = 'firebase-sync-dot error';
-      if (syncText) syncText.textContent = '⚠️ 클라우드 연결 오류 (권한/규칙 확인 필요)';
-    });
+    }
+
+    tryRealtimeDbFallback(syncDot, syncText);
 
   } catch (err) {
     console.warn('initFirebaseSync error:', err);
     if (syncDot) syncDot.className = 'firebase-sync-dot error';
     if (syncText) syncText.textContent = '⚠️ Firebase 초기화 실패';
+  }
+}
+
+function tryRealtimeDbFallback(syncDot, syncText) {
+  if (typeof firebase.database === 'function') {
+    try {
+      firebaseDb = firebase.database();
+      const settingsRef = firebaseDb.ref('wardRoomSettings');
+      settingsRef.on('value', (snapshot) => {
+        const remoteData = snapshot.val();
+        isFirebaseConnected = true;
+        activeCloudDriver = 'realtime';
+        if (syncDot) syncDot.className = 'firebase-sync-dot connected';
+        if (syncText) syncText.innerHTML = '🟢 <strong>클라우드 실시간 동기화 활성 (Realtime DB)</strong> <span style="font-size:11px;">(전 기기 자동 공유 중)</span>';
+        
+        if (remoteData) {
+          applyRemoteSyncData(remoteData);
+        }
+      }, (error) => {
+        console.warn('Realtime DB warning:', error);
+        if (!isFirebaseConnected) {
+          if (syncDot) syncDot.className = 'firebase-sync-dot error';
+          if (syncText) syncText.innerHTML = '⚠️ <strong>클라우드 DB 활성화 대기</strong> <span style="font-size:11px;">(콘솔에서 Firestore 또는 Realtime DB를 생성해주세요)</span>';
+        }
+      });
+    } catch (e) {
+      console.warn('Realtime DB init error:', e);
+    }
+  }
+}
+
+function pushSettingsToCloud(rooms, fees, userLabel) {
+  const payload = {
+    rooms: rooms,
+    fees: fees,
+    updatedAt: new Date().toISOString(),
+    updatedBy: userLabel || '원무관리자'
+  };
+
+  let pushed = false;
+  if (firestoreDb && activeCloudDriver === 'firestore') {
+    firestoreDb.collection('hosp_settings').doc('wardRooms').set(payload)
+      .then(() => {
+        showAdminToast('☁️ 클라우드 동기화 완료! 병원 내 모든 기기에 실시간 공유되었습니다.');
+      })
+      .catch(err => console.warn('Firestore push error:', err));
+    pushed = true;
+  }
+
+  if (firebaseDb && (activeCloudDriver === 'realtime' || !pushed)) {
+    firebaseDb.ref('wardRoomSettings').set(payload)
+      .then(() => {
+        if (!pushed) showAdminToast('☁️ 클라우드 동기화 완료! 병원 내 모든 기기에 실시간 공유되었습니다.');
+      })
+      .catch(err => console.warn('Realtime push error:', err));
+  }
+}
+
+function applyRemoteSyncData(remoteData) {
+  if (!remoteData) return;
+  let changed = false;
+  if (remoteData.rooms) {
+    Object.keys(WARD_ROOM_CONFIG).forEach(w => {
+      WARD_ROOM_CONFIG[w].rooms = {};
+    });
+    Object.keys(remoteData.rooms).forEach(k => {
+      const r = remoteData.rooms[k];
+      if (!r.deleted) {
+        if (!WARD_ROOM_CONFIG[r.ward]) {
+          WARD_ROOM_CONFIG[r.ward] = { type: r.type || 'general', rooms: {} };
+        }
+        WARD_ROOM_CONFIG[r.ward].rooms[r.roomKey] = {
+          name: r.name,
+          baseRoomKey: r.baseRoomKey
+        };
+        DEFAULT_WARD_ROOM_SETTINGS[k] = r;
+      } else {
+        delete DEFAULT_WARD_ROOM_SETTINGS[k];
+      }
+    });
+    changed = true;
+  }
+  
+  if (remoteData.fees) {
+    customWardFees = JSON.parse(JSON.stringify(remoteData.fees));
+    changed = true;
+  }
+
+  if (changed) {
+    renderRoomSelector();
+    calculateAll();
+    renderRoomSimulation();
+    const wardFeeModal = document.getElementById('ward-fee-modal');
+    if (wardFeeModal && wardFeeModal.classList.contains('show')) {
+      renderWardFeeModal();
+    }
   }
 }
 
@@ -3268,8 +3319,8 @@ function saveCustomFirebaseConfig() {
     }
   }
 
-  if (!configObj || (!configObj.apiKey && !configObj.databaseURL)) {
-    alert('apiKey 또는 databaseURL이 포함된 올바른 Firebase 설정을 입력해주세요.');
+  if (!configObj || (!configObj.apiKey && !configObj.databaseURL && !configObj.projectId)) {
+    alert('apiKey 또는 projectId가 포함된 올바른 Firebase 설정을 입력해주세요.');
     return;
   }
 
@@ -3292,6 +3343,7 @@ function resetFirebaseConfig() {
     FIREBASE_CONFIG.databaseURL = '';
   }
   firebaseDb = null;
+  firestoreDb = null;
   isFirebaseConnected = false;
   closeFirebaseConfigModal();
   initFirebaseSync();
