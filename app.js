@@ -108,9 +108,69 @@ function sanitizeLegacyLocalStorage() {
       let data = JSON.parse(rawRooms);
       let changed = false;
       if (data && data.rooms) {
+        // 1. 6병동 606호, 609호 분리 반영
+        if (data.rooms['6병동_3인실'] && !data.rooms['6병동_3인실 (606호)']) {
+          delete data.rooms['6병동_3인실'];
+          data.rooms['6병동_3인실 (609호) [4인실 수가]'] = {
+            ward: '6병동',
+            roomKey: '3인실 (609호) [4인실 수가]',
+            name: '3인실 (609호) [4인실 수가]',
+            type: 'general',
+            baseRoomKey: '4인실',
+            target30: 2830219,
+            d15: 121990, d16: 111790, d31: 106690,
+            basicCareDaily: 38660,
+            copayRate: 0.20, fixedCopay: null,
+            presets: [2600000, 2700000, 2830000, 2900000, 3000000]
+          };
+          data.rooms['6병동_3인실 (606호)'] = {
+            ward: '6병동',
+            roomKey: '3인실 (606호)',
+            name: '3인실 (606호)',
+            type: 'general',
+            baseRoomKey: '3인실',
+            target30: 3399148,
+            d15: 142390, d16: 130150, d31: 124030,
+            basicCareDaily: 38000,
+            copayRate: 0.30, fixedCopay: 0.30,
+            presets: [3200000, 3300000, 3400000, 3500000, 3600000]
+          };
+          changed = true;
+        }
+
+        // 2. 7병동 1인실 (715호 VIP) 일 20만원 & 706호 1인실 & 709호 정상화
+        if (data.rooms['7병동_1인실 (715호 VIP)']) {
+          const r715 = data.rooms['7병동_1인실 (715호 VIP)'];
+          if (r715.target30 > 9000000 || (r715.d15 && r715.d15 > 220000)) {
+            r715.target30 = 8172718;
+            r715.d15 = 200000;
+            r715.d16 = 200000;
+            r715.d31 = 200000;
+            r715.presets = [7500000, 7800000, 8000000, 8170000, 8500000];
+            changed = true;
+          }
+        }
+        if (data.rooms['7병동_1인실 (706호)']) {
+          const r706 = data.rooms['7병동_1인실 (706호)'];
+          r706.target30 = 8172718;
+          r706.d15 = 200000;
+          r706.d16 = 200000;
+          r706.d31 = 200000;
+          r706.presets = [7500000, 7800000, 8000000, 8170000, 8500000];
+          changed = true;
+        }
+        if (data.rooms['7병동_3인실 [4인실 수가]']) {
+          const r709 = data.rooms['7병동_3인실 [4인실 수가]'];
+          if (r709.name && r709.name.includes('706')) {
+            r709.name = '3인실 (709호) [4인실 수가]';
+            r709.roomKey = '3인실 (709호) [4인실 수가]';
+            changed = true;
+          }
+        }
+
+        // 3. 8병동 806, 815, 818호 3인실 정상화
         Object.keys(data.rooms).forEach(k => {
           const r = data.rooms[k];
-          // 8병동 806, 815, 818호가 3인실인데 target30이 450만원 이상(구 2인실 금액)인 경우 자동 정상화
           if (r.ward === '8병동' && (r.name.includes('806') || r.name.includes('815') || r.name.includes('818') || k.includes('806'))) {
             r.baseRoomKey = '3인실';
             r.fixedCopay = 0.30;
@@ -124,18 +184,8 @@ function sanitizeLegacyLocalStorage() {
               changed = true;
             }
           }
-          // 7병동 1인실이 일 30만원 이상 또는 1000만원 이상인 경우 자동 정상화
-          if (r.ward === '7병동' && r.baseRoomKey === '1인실') {
-            if (r.target30 > 10000000 || (r.d15 && r.d15 > 280000)) {
-              r.target30 = 7942500;
-              r.d15 = 200000;
-              r.d16 = 200000;
-              r.d31 = 200000;
-              r.presets = [7500000, 7800000, 8000000, 8500000, 9000000];
-              changed = true;
-            }
-          }
         });
+
         if (changed) {
           localStorage.setItem(STORAGE_KEY_WARD_ROOMS, JSON.stringify(data));
         }
@@ -154,10 +204,14 @@ function sanitizeLegacyLocalStorage() {
           }
         }
         if (k.includes('7병동') && k.includes('1인실')) {
-          if (fees[k].target30 > 10000000 || (fees[k].customDailyRoom && fees[k].customDailyRoom.d15 > 280000)) {
+          if (fees[k].target30 > 9000000 || (fees[k].customDailyRoom && fees[k].customDailyRoom.d15 > 220000)) {
             delete fees[k];
             feesChanged = true;
           }
+        }
+        if (k === '6병동_3인실') {
+          delete fees[k];
+          feesChanged = true;
         }
       });
       if (feesChanged) {
@@ -756,6 +810,9 @@ async function init() {
   // Load custom ward rooms and fees from LocalStorage
   loadCustomWardRooms();
   loadCustomWardFees();
+
+  // Initialize Firebase Cloud Realtime Sync (if configured)
+  initFirebaseSync();
 
   // Date setup (defaulting to current date and onset 1 month ago)
   const todayStr = new Date().toISOString().split('T')[0];
@@ -2929,6 +2986,21 @@ function saveWardFeeSettings() {
     }
 
     deletedDraftRooms.clear();
+
+    // 5. Push to Firebase Cloud Database (if connected)
+    if (firebaseDb) {
+      firebaseDb.ref('wardRoomSettings').set({
+        rooms: roomsToPersist,
+        fees: customWardFees,
+        updatedAt: new Date().toISOString(),
+        updatedBy: '원무관리자'
+      }).then(() => {
+        showAdminToast('☁️ 클라우드 동기화 완료! 병원 내 모든 기기에 실시간 공유되었습니다.');
+      }).catch(err => {
+        console.warn('Firebase push failed:', err);
+        showAdminToast('⚠️ 로컬 저장은 완료되었으나 클라우드 공유에 실패했습니다. (DB 규칙 확인 필요)');
+      });
+    }
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -2961,16 +3033,18 @@ function resetAllWardFeesToDefault() {
     type: 'general',
     rooms: {
       '4인실': { name: '4인실', baseRoomKey: '4인실' },
-      '3인실': { name: '3인실 (606호, 609호) [4인실 수가]', baseRoomKey: '4인실' }
+      '3인실 (609호) [4인실 수가]': { name: '3인실 (609호) [4인실 수가]', baseRoomKey: '4인실' },
+      '3인실 (606호)': { name: '3인실 (606호)', baseRoomKey: '3인실' }
     }
   };
   WARD_ROOM_CONFIG['7병동'] = {
     type: 'general',
     rooms: {
       '4인실': { name: '4인실', baseRoomKey: '4인실' },
-      '3인실': { name: '3인실 (717호, 718호)', baseRoomKey: '3인실' },
-      '3인실 [4인실 수가]': { name: '3인실 (706호, 709호) [4인실 수가]', baseRoomKey: '4인실' },
-      '2인실': { name: '2인실 (715호)', baseRoomKey: '2인실' }
+      '3인실 (717호, 718호)': { name: '3인실 (717호, 718호)', baseRoomKey: '3인실' },
+      '3인실 (709호) [4인실 수가]': { name: '3인실 (709호) [4인실 수가]', baseRoomKey: '4인실' },
+      '1인실 (706호)': { name: '1인실 (706호)', baseRoomKey: '1인실' },
+      '1인실 (715호 VIP)': { name: '1인실 (715호 VIP)', baseRoomKey: '1인실' }
     }
   };
   WARD_ROOM_CONFIG['8병동'] = {
@@ -2978,9 +3052,18 @@ function resetAllWardFeesToDefault() {
     rooms: {
       '4인실': { name: '4인실', baseRoomKey: '4인실' },
       '3인실 [4인실 수가]': { name: '3인실 (809호, 819호) [4인실 수가]', baseRoomKey: '4인실' },
-      '2인실': { name: '2인실 (806호, 815호, 818호)', baseRoomKey: '2인실' }
+      '3인실': { name: '3인실 (806호, 815호, 818호)', baseRoomKey: '3인실' }
     }
   };
+
+  if (firebaseDb) {
+    firebaseDb.ref('wardRoomSettings').set({
+      rooms: DEFAULT_WARD_ROOM_SETTINGS,
+      fees: {},
+      updatedAt: new Date().toISOString(),
+      updatedBy: '공식기본값초기화'
+    });
+  }
 
   showWardFeeModal();
   renderRoomSelector();
@@ -3052,3 +3135,165 @@ window.deleteDraftRoom = deleteDraftRoom;
 // Launch Calculator
 init();
 
+
+
+// ========================================================
+// Firebase Realtime Cloud Synchronization Engine
+// ========================================================
+let firebaseDb = null;
+let isFirebaseConnected = false;
+
+function initFirebaseSync() {
+  const syncDot = document.getElementById('firebase-sync-dot');
+  const syncText = document.getElementById('firebase-sync-text');
+  
+  if (typeof firebase === 'undefined' || typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+    if (syncDot) syncDot.className = 'firebase-sync-dot';
+    if (syncText) syncText.innerHTML = '☁️ 로컬 단독 모드 <span style="font-size:11px; opacity:0.8;">(Firebase 키 설정 시 전 직원 실시간 공유)</span>';
+    return;
+  }
+
+  try {
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    firebaseDb = firebase.database();
+    
+    if (syncText) syncText.textContent = '☁️ 클라우드 동기화 확인 중...';
+
+    // Realtime Listener for Ward Room Settings
+    const settingsRef = firebaseDb.ref('wardRoomSettings');
+    settingsRef.on('value', (snapshot) => {
+      const remoteData = snapshot.val();
+      isFirebaseConnected = true;
+      if (syncDot) syncDot.className = 'firebase-sync-dot connected';
+      if (syncText) syncText.innerHTML = '🟢 <strong>클라우드 실시간 동기화 활성</strong> <span style="font-size:11px;">(전 기기 자동 공유 중)</span>';
+      
+      if (remoteData) {
+        let changed = false;
+        if (remoteData.rooms) {
+          Object.keys(WARD_ROOM_CONFIG).forEach(w => {
+            WARD_ROOM_CONFIG[w].rooms = {};
+          });
+          Object.keys(remoteData.rooms).forEach(k => {
+            const r = remoteData.rooms[k];
+            if (!r.deleted) {
+              if (!WARD_ROOM_CONFIG[r.ward]) {
+                WARD_ROOM_CONFIG[r.ward] = { type: r.type || 'general', rooms: {} };
+              }
+              WARD_ROOM_CONFIG[r.ward].rooms[r.roomKey] = {
+                name: r.name,
+                baseRoomKey: r.baseRoomKey
+              };
+              DEFAULT_WARD_ROOM_SETTINGS[k] = r;
+            } else {
+              delete DEFAULT_WARD_ROOM_SETTINGS[k];
+            }
+          });
+          changed = true;
+        }
+        
+        if (remoteData.fees) {
+          customWardFees = JSON.parse(JSON.stringify(remoteData.fees));
+          changed = true;
+        }
+
+        if (changed) {
+          renderRoomSelector();
+          calculateAll();
+          renderRoomSimulation();
+          const wardFeeModal = document.getElementById('ward-fee-modal');
+          if (wardFeeModal && wardFeeModal.classList.contains('show')) {
+            renderWardFeeModal();
+          }
+        }
+      }
+    }, (error) => {
+      console.warn('Firebase sync read warning:', error);
+      isFirebaseConnected = false;
+      if (syncDot) syncDot.className = 'firebase-sync-dot error';
+      if (syncText) syncText.textContent = '⚠️ 클라우드 연결 오류 (권한/규칙 확인 필요)';
+    });
+
+  } catch (err) {
+    console.warn('initFirebaseSync error:', err);
+    if (syncDot) syncDot.className = 'firebase-sync-dot error';
+    if (syncText) syncText.textContent = '⚠️ Firebase 초기화 실패';
+  }
+}
+
+function openFirebaseConfigModal() {
+  const modal = document.getElementById('firebase-config-modal');
+  if (!modal) return;
+  const textarea = document.getElementById('firebase-config-input');
+  if (textarea) {
+    if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
+      textarea.value = JSON.stringify(FIREBASE_CONFIG, null, 2);
+    } else {
+      textarea.value = '';
+    }
+  }
+  modal.classList.add('show');
+}
+
+function closeFirebaseConfigModal() {
+  const modal = document.getElementById('firebase-config-modal');
+  if (modal) modal.classList.remove('show');
+}
+
+function saveCustomFirebaseConfig() {
+  const textarea = document.getElementById('firebase-config-input');
+  const val = textarea ? textarea.value.trim() : '';
+  if (!val) {
+    alert('Firebase 설정 정보를 입력해주세요.');
+    return;
+  }
+
+  let configObj = null;
+  try {
+    configObj = JSON.parse(val);
+  } catch (e) {
+    try {
+      const match = val.match(/\{[\s\S]*\}/);
+      if (match) {
+        const cleaned = match[0]
+          .replace(/(\w+)\s*:/g, '"$1":')
+          .replace(new RegExp("'", "g"), '"')
+          .replace(/,\s*\}/g, '}');
+        configObj = JSON.parse(cleaned);
+      }
+    } catch (err) {
+      alert('설정 형식이 올바르지 않습니다. JSON 형식이나 Firebase 콘솔의 firebaseConfig 객체를 그대로 붙여넣어주세요.');
+      return;
+    }
+  }
+
+  if (!configObj || (!configObj.apiKey && !configObj.databaseURL)) {
+    alert('apiKey 또는 databaseURL이 포함된 올바른 Firebase 설정을 입력해주세요.');
+    return;
+  }
+
+  localStorage.setItem('HN_FIREBASE_CONFIG_CUSTOM', JSON.stringify(configObj));
+  if (typeof FIREBASE_CONFIG !== 'undefined') {
+    Object.assign(FIREBASE_CONFIG, configObj);
+  }
+  closeFirebaseConfigModal();
+  initFirebaseSync();
+  showAdminToast('✅ Firebase 설정이 저장되었습니다. 클라우드 연결을 시도합니다.');
+}
+
+function resetFirebaseConfig() {
+  if (!confirm('Firebase 클라우드 연동을 해제하고 로컬 단독 모드로 전환하시겠습니까?')) {
+    return;
+  }
+  localStorage.removeItem('HN_FIREBASE_CONFIG_CUSTOM');
+  if (typeof FIREBASE_CONFIG !== 'undefined') {
+    FIREBASE_CONFIG.apiKey = '';
+    FIREBASE_CONFIG.databaseURL = '';
+  }
+  firebaseDb = null;
+  isFirebaseConnected = false;
+  closeFirebaseConfigModal();
+  initFirebaseSync();
+  showAdminToast('클라우드 연동이 해제되었습니다.');
+}
