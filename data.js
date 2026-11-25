@@ -180,14 +180,14 @@ const DEFAULT_WARD_ROOM_SETTINGS = {
     name: '1인실 (715호 VIP)',
     type: 'general',
     baseRoomKey: '1인실',
-    target30: 8172718, // 30일 약 817만원 (1일 20만원 VIP 병실료 600만 + 본인부담 약 217.3만)
-    d15: 200000,
-    d16: 200000,
-    d31: 200000,
+    target30: 9672718, // 30일 약 967만원 (1일 25만원 VIP 병실료 750만 + 본인부담 약 217.3만)
+    d15: 250000,
+    d16: 250000,
+    d31: 250000,
     basicCareDaily: 38000,
     copayRate: 1.00,
     fixedCopay: 1.00,
-    presets: [7500000, 7800000, 8000000, 8170000, 8500000]
+    presets: [8500000, 9000000, 9500000, 9670000, 10000000]
   },
   '8병동_4인실': {
     ward: '8병동',
@@ -400,7 +400,7 @@ const ROOM_DIRECTORY_DATA = [
   { id: '7병동_712', ward: '7병동', wardType: 'general', room: '712', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_713', ward: '7병동', wardType: 'general', room: '713', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
   { id: '7병동_714', ward: '7병동', wardType: 'general', room: '714', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
-  { id: '7병동_715', ward: '7병동', wardType: 'general', room: '715', roomType: '1인실 VIP', feeApplied: '1인실', baseRoomKey: '1인실', capacity: 1, note: '1인실 VIP (일 20만원)' },
+  { id: '7병동_715', ward: '7병동', wardType: 'general', room: '715', roomType: '1인실 VIP', feeApplied: '1인실', baseRoomKey: '1인실', capacity: 1, note: '1인실 VIP (일 25만원)' },
   { id: '7병동_717', ward: '7병동', wardType: 'general', room: '717', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
   { id: '7병동_718', ward: '7병동', wardType: 'general', room: '718', roomType: '3인실', feeApplied: '3인실', baseRoomKey: '3인실', capacity: 3, note: '' },
   { id: '7병동_720', ward: '7병동', wardType: 'general', room: '720', roomType: '4인실', feeApplied: '4인실', baseRoomKey: '4인실', capacity: 4, note: '' },
